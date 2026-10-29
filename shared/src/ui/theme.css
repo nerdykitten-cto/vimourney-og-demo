@@ -1,0 +1,59 @@
+/* Retro terminal look with modern polish. Everything else reads these tokens. */
+:root {
+  --bg: #0a0e13;
+  --panel: #10161d;
+  --panel-2: #141c25;
+  --line: #1f2a36;
+  --fg: #cbd5e1;
+  --dim: #64748b;
+  --accent: #5af78e;
+  --normal: #57c7ff;
+  --insert: #5af78e;
+  --visual: #ff6ac1;
+  --warn: #ffb86c;
+  --bad: #ff5c57;
+  --star: #f3d36b;
+  --glow: 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent);
+  --font: ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--normal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

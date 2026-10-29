@@ -1,0 +1,71 @@
+import type { World } from '@kbm/shared';
+import { level, W6 } from './keys';
+
+/** World 6: visual mode. */
+export const world6: World = {
+  id: 'vim-6',
+  title: 'Visual',
+  flavor: 'See what you are about to change. Select first, then act, including whole columns.',
+  levels: [
+    level(6, 1, {
+      title: 'Shout it',
+      brief: 'Make every line uppercase.',
+      lines: ['make', 'tHese', 'LOUD'],
+      goal: { text: ['MAKE', 'THESE', 'LOUD'] },
+      keys: 'VGU',
+      allowed: W6,
+      hint: ['Select the lines first, then change their case.', 'V selects whole lines, G extends to the last one, U makes uppercase.'],
+      card: 'visualline',
+    }),
+    level(6, 2, {
+      title: 'Shout one word',
+      brief: 'Make Hello uppercase and leave World alone.',
+      lines: ['Hello World'],
+      goal: { text: ['HELLO World'] },
+      keys: 'veU',
+      allowed: W6,
+      hint: ['Select the word first, then change its case.', 'v starts selecting, e extends to the end of the word, U makes uppercase.'],
+      card: 'visual',
+    }),
+    level(6, 3, {
+      title: 'Replace with a copy',
+      brief: 'Make the second word say one too.',
+      lines: ['one two'],
+      goal: { text: ['one one'] },
+      keys: 'yewvep',
+      allowed: W6,
+      hint: ['Copy the first word, then select the second and paste over it.', 'ye, w, then ve selects a word and p replaces it with the yanked text.'],
+      card: 'visualput',
+    }),
+    level(6, 4, {
+      title: 'Comment a column',
+      brief: 'Put "# " in front of every line at once.',
+      lines: ['a', 'b', 'c'],
+      goal: { text: ['# a', '# b', '# c'] },
+      keys: '<C-v>jjI# <Esc>',
+      allowed: W6,
+      typing: true,
+      hint: ['Select a column down the lines, then insert once.', 'Ctrl-v starts a block, I inserts at its left edge on every line.'],
+      card: 'block',
+    }),
+    level(6, 5, {
+      title: 'Cut a column',
+      brief: 'Remove the abc prefix from every line.',
+      lines: ['abc123', 'abc456', 'abc789'],
+      goal: { text: ['123', '456', '789'] },
+      keys: '<C-v>jjlld',
+      allowed: W6,
+      hint: ['Select a block three columns wide and three lines tall.', 'Ctrl-v, j j, l l, then d.'],
+    }),
+    level(6, 6, {
+      title: 'Append to every line',
+      brief: 'Add a semicolon at the end of every line.',
+      lines: ['one', 'two', 'six'],
+      goal: { text: ['one;', 'two;', 'six;'] },
+      keys: '<C-v>jj$A;<Esc>',
+      allowed: W6,
+      typing: true,
+      hint: ['A block can reach the end of every line.', 'Ctrl-v, j j, $ then A appends at the end of each line.'],
+    }),
+  ],
+};

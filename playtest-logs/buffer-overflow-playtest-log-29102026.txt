@@ -1,0 +1,19 @@
+Buffer Overflow playtest log, 18 events
+     0.0s  lesson-open
+    22.0s  battle-start  {"enemy":"stalker"}
+    23.1s  battle  {"enemy":"stalker"}
+    82.5s  battle-won  {"enemy":"stalker","keys":92,"wasted":1,"tick":91,"seconds":59,"integrity":3}
+    89.6s  battle-start  {"enemy":"sentry"}
+    90.6s  battle  {"enemy":"sentry"}
+   111.2s  battle-won  {"enemy":"sentry","keys":34,"wasted":0,"tick":33,"seconds":21,"integrity":2}
+   127.3s  battle-start  {"enemy":"patrol"}
+   128.3s  battle  {"enemy":"patrol"}
+   157.3s  battle-won  {"enemy":"patrol","keys":33,"wasted":0,"tick":32,"seconds":29,"integrity":3}
+   170.2s  battle-start  {"enemy":"warden"}
+   171.2s  battle  {"enemy":"warden"}
+   253.2s  battle-lost  {"enemy":"warden","keys":60,"wasted":0,"tick":60,"seconds":82,"integrity":0}
+   257.4s  battle  {"enemy":"warden"}
+   322.6s  battle-won  {"enemy":"warden","keys":47,"wasted":0,"tick":46,"seconds":65,"integrity":4}
+   325.6s  area-cleared
+   362.3s  arcade-start  {"seed":295387279,"daily":false}
+   423.2s  arcade-end  {"score":200,"captures":6,"wastedKeys":49,"rank":1,"seed":295387279}

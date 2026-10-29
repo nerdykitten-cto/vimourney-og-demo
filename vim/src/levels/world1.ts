@@ -1,0 +1,97 @@
+import type { World } from '@kbm/shared';
+import { level, MOVE, W1 } from './keys';
+
+const INSERT = [...MOVE, 'i', 'Escape'];
+const grid = ['abcdefgh', 'abcdefgh', 'abcdefgh', 'abcdefgh'];
+
+/** World 1: modes and the four movement keys. */
+export const world1: World = {
+  id: 'vim-1',
+  title: 'Survive',
+  flavor: 'Your mouse is gone. The editor is waiting in Normal mode. Learn to move before you type.',
+  levels: [
+    level(1, 1, {
+      title: 'First steps',
+      brief: 'Move the cursor onto the o at the end of hello.',
+      lines: ['hello world'],
+      goal: { cursor: [0, 4] },
+      keys: 'llll',
+      allowed: MOVE,
+      hint: ['The cursor moves one character at a time.', 'l moves one character right.'],
+      card: 'hjkl',
+    }),
+    level(1, 2, {
+      title: 'Down the page',
+      brief: 'Get to the last line.',
+      lines: ['const a = 1;', 'const b = 2;', 'const c = 3;', 'const d = 4;'],
+      goal: { cursor: [3, 0] },
+      keys: 'jjj',
+      allowed: MOVE,
+      hint: ['Down is one of the four home-row keys.', 'j moves one line down.'],
+    }),
+    level(1, 3, {
+      title: 'Diagonal',
+      brief: 'Land on the 3 of the number in the last line.',
+      lines: ['let x = 10;', 'let y = 20;', 'let z = 30;'],
+      goal: { cursor: [2, 8] },
+      keys: 'jjllllllll',
+      allowed: MOVE,
+      hint: ['Two moves down, then a run to the right.', 'j goes down, l goes right. Keep tapping.'],
+    }),
+    level(1, 4, {
+      title: 'Back up',
+      brief: 'Walk back to the b in the second line.',
+      lines: grid,
+      at: [3, 5],
+      goal: { cursor: [1, 1] },
+      keys: 'kkhhhh',
+      allowed: MOVE,
+      hint: ['Up and left this time.', 'k moves up, h moves left.'],
+    }),
+    level(1, 5, {
+      title: 'Say hello',
+      brief: 'Type "hello " in front of world, then get back to Normal mode.',
+      lines: ['world'],
+      goal: { text: ['hello world'] },
+      keys: 'ihello <Esc>',
+      allowed: INSERT,
+      typing: true,
+      hint: ['Typing text needs Insert mode, and Esc leaves it.', 'i starts inserting before the cursor. Esc returns to Normal mode.'],
+      card: 'insert',
+    }),
+    level(1, 6, {
+      title: 'Fix the typo',
+      brief: 'coffee has two f. Add the missing one.',
+      lines: ['I like cofee'],
+      at: [0, 6],
+      goal: { text: ['I like coffee'] },
+      keys: 'lllif<Esc>',
+      allowed: INSERT,
+      typing: true,
+      hint: ['Move onto the f first, then insert another one in front of it.', 'l ×3 puts you on the f. i f Esc inserts one more.'],
+    }),
+    level(1, 7, {
+      title: 'Add on the end',
+      brief: 'Add an exclamation mark after the last letter.',
+      lines: ['say hi'],
+      at: [0, 5],
+      goal: { text: ['say hi!'] },
+      keys: 'a!<Esc>',
+      allowed: [...INSERT, 'a'],
+      typing: true,
+      hint: ['You want to insert after the cursor, not before it.', 'a starts inserting after the cursor.'],
+      card: 'append',
+    }),
+    level(1, 8, {
+      title: 'New line',
+      brief: 'Add a second line that says second.',
+      lines: ['first'],
+      goal: { text: ['first', 'second'] },
+      keys: 'osecond<Esc>',
+      allowed: W1,
+      typing: true,
+      hint: ['There is a way to start typing on a fresh line below.', 'o opens a new line below and starts inserting.'],
+      card: 'open',
+    }),
+  ],
+};

@@ -1,0 +1,25 @@
+{
+  "name": "keyboard-mastery",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "vim",
+    "app",
+    "game"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w app",
+    "build": "npm run build -w app",
+    "test": "vitest run",
+    "check": "npm run check -w app",
+    "zip": "npm run build && node scripts/zip.mjs",
+    "game": "npm run dev -w game",
+    "game:build": "npm run build -w game"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

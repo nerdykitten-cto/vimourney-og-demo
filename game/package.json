@@ -1,0 +1,16 @@
+{
+  "name": "@kbm/game",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@kbm/shared": "*",
+    "@kbm/vim": "*",
+    "phaser": "^4.2.1"
+  }
+}
