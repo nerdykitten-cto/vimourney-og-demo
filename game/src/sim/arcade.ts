@@ -5,6 +5,9 @@ import type { Rng } from './rng';
 const WORDS = ['alpha', 'beta', 'gamma', 'delta', 'node', 'link', 'root', 'leaf', 'array', 'index', 'value', 'item', 'queue', 'stack', 'parse', 'token', 'scope', 'block', 'frame', 'cache', 'merge', 'split', 'trim', 'fold', 'map', 'sum', 'min', 'max', 'tree', 'path'];
 
 export const RUSH_SECONDS = 60;
+export const WARMUP_TARGETS = 3;
+/** Extra keys over the best route before the game shows it as a hint. */
+export const HINT_AFTER_EXTRA = 3;
 export const RUSH_KEYS = new Set(['h', 'j', 'k', 'l', 'w', 'b', 'e', 'W', 'B', 'E', '0', '^', '$', 'f', 'F', 't', 'T', 'g', 'G', ';', ',']);
 
 export interface Capture {
@@ -59,12 +62,17 @@ export class TargetRush {
 
   private pickTarget(): Pos {
     const c = this.cursor;
+    // Warm-up: the first targets sit on the same row, where w, b, e, 0 and $ do the work.
+    const warm = this.captures.length < WARMUP_TARGETS;
     for (let tries = 0; tries < 200; tries++) {
-      const row = this.rng.int(this.lines.length);
+      const row = warm ? c.row : this.rng.int(this.lines.length);
       const line = this.lines[row]!;
       const col = this.rng.int(line.length);
       const dist = Math.abs(row - c.row) + Math.abs(col - c.col);
-      if (line[col] !== ' ' && dist >= 4) return { row, col };
+      if (line[col] !== ' ' && dist >= 4 && (!warm || dist <= 16)) {
+        const pos = { row, col };
+        if (!warm || optimalRoute(this.factory, this.lines, c, pos, { maxKeys: 6 })) return pos;
+      }
     }
     return { row: 0, col: 0 };
   }
@@ -82,7 +90,9 @@ export class TargetRush {
 
   /** Feed a key. Returns the capture when the cursor lands on the target. */
   feed(key: string): { accepted: boolean; capture: Capture | null } {
-    if (this.over || !RUSH_KEYS.has(key)) return { accepted: false, capture: null };
+    const awaiting = this.engine.state.pending.awaiting;
+    // The letter after f, t, F or T is an argument, so any key is allowed there.
+    if (this.over || !(awaiting || RUSH_KEYS.has(key))) return { accepted: false, capture: null };
     this.engine.feed(key);
     const st = this.engine.state;
     // Edits are not part of the game: undo any text change.
@@ -105,6 +115,11 @@ export class TargetRush {
       return { accepted: true, capture };
     }
     return { accepted: true, capture: null };
+  }
+
+  /** The best route, once the player has burned enough keys on this target to need a nudge. */
+  get hint(): string[] | null {
+    return this.best.length > 0 && this.keysSince.length >= this.best.length + HINT_AFTER_EXTRA ? this.best : null;
   }
 
   /** Best route from the current cursor to the current target (for a hint line). */

@@ -30,16 +30,18 @@ export class Title extends Phaser.Scene {
     this.add.rectangle(W / 2, H / 2, W, H, C.bg);
 
     // Falling code rain for atmosphere.
-    for (let i = 0; i < 26; i++) {
-      const t = text(this, Math.random() * W, Math.random() * H, 'x@{}();=#<>'[Math.floor(Math.random() * 11)]!, 16, C.line);
+    for (let i = 0; i < 40; i++) {
+      const t = text(this, Math.random() * W, Math.random() * H, 'x@{}();=#<>'[Math.floor(Math.random() * 11)]!, 20, C.line);
       t.setAlpha(0.5 + Math.random() * 0.4);
       this.tweens.add({ targets: t, y: H + 30, duration: 6000 + Math.random() * 8000, repeat: -1, delay: Math.random() * 4000, onRepeat: () => t.setY(-20) });
     }
 
-    const title = text(this, W / 2, 110, 'BUFFER OVERFLOW', 56, C.accent, true).setOrigin(0.5);
+    const title = text(this, W / 2, 150, 'BUFFER OVERFLOW', 72, C.accent, true).setOrigin(0.5);
     this.tweens.add({ targets: title, alpha: { from: 0.8, to: 1 }, duration: 1400, yoyo: true, repeat: -1 });
-    text(this, W / 2, 168, 'a Vim action RPG  ·  proof of concept', 18, C.dim).setOrigin(0.5);
+    text(this, W / 2, 218, 'a Vim action RPG  ·  proof of concept', 18, C.dim).setOrigin(0.5);
 
+    this.add.sprite(W / 2 - 330, 150, 'actors', 0).setScale(5).play('idle-player');
+    this.add.sprite(W / 2 + 330, 150, 'warden').setScale(3.5).play('idle-warden');
     this.items = [
       { label: () => 'Adventure: Area 1, Movement', run: () => this.scene.start('World') },
       { label: () => 'Arcade Room: Target Rush', run: () => this.scene.start('Arcade') },
@@ -49,15 +51,15 @@ export class Title extends Phaser.Scene {
       { label: () => (this.confirmReset ? 'Really reset progress? press y' : 'Reset progress'), run: () => this.askReset() },
     ];
     this.items.forEach((it, i) => {
-      const t = text(this, 330, 250 + i * 44, it.label(), 24, C.fg);
+      const t = text(this, W / 2 - 200, 300 + i * 52, it.label(), 28, C.fg);
       t.setInteractive({ useHandCursor: true });
       t.on('pointerover', () => this.select(i));
       t.on('pointerdown', () => this.activate());
       this.labels.push(t);
     });
-    this.cursor = text(this, 296, 250, '▶', 24, C.normal, true);
-    this.note = text(this, W / 2, 540, '', 16, C.warn).setOrigin(0.5);
-    text(this, W / 2, 568, 'j / k move   Enter choose   Tab character sheet in the world   Esc back', 14, C.dim).setOrigin(0.5);
+    this.cursor = text(this, W / 2 - 240, 300, '▶', 28, C.normal, true);
+    this.note = text(this, W / 2, 650, '', 18, C.warn).setOrigin(0.5);
+    text(this, W / 2, 684, 'j / k move   Enter choose   Tab character sheet in the world   Esc back', 14, C.dim).setOrigin(0.5);
     text(this, W / 2, 20, `Level ${mastery.characterLevel}   ${mastery.xp} XP`, 14, C.dim).setOrigin(0.5, 0);
     this.refresh();
 
@@ -95,7 +97,7 @@ export class Title extends Phaser.Scene {
     this.items.forEach((it, i) => {
       this.labels[i]!.setText(it.label()).setColor(i === this.index ? '#ffffff' : '#94a3b8');
     });
-    this.cursor.setY(250 + this.index * 44);
+    this.cursor.setY(300 + this.index * 52);
   }
 
   private toggleSound(): void {

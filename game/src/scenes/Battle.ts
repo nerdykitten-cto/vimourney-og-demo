@@ -4,13 +4,16 @@ import { Battle as Sim, type BattleEvent, type EnemyId, ENEMIES } from '../sim/b
 import { createRng } from '../sim/rng';
 import { SKILLS } from '../sim/mastery';
 import { log, mastery, sfx } from '../session';
+import { ACTORS } from './Boot';
 import { bindKeys, burst, C, charWidth, H, keycap, keyLabel, panel, sweepOut, text, W } from '../ui';
 
-const FONT_SIZE = 18;
-const ARENA_X = 70;
-const ARENA_Y = 200;
-const LINE_H = 36;
+const FONT_SIZE = 24;
+const ARENA_X = 100;
+const ARENA_Y = 250;
+const LINE_H = 44;
+const BOTTOM_Y = 590;
 
+const ACTOR_INDEX: Record<string, number> = Object.fromEntries(ACTORS.map((a, i) => [a, i]));
 const ENEMY_COLOR: Record<EnemyId, number> = { sentry: C.warn, patrol: C.star, stalker: C.bad, warden: C.visual };
 const XP: Record<EnemyId, number> = { sentry: 20, patrol: 20, stalker: 25, warden: 80 };
 
@@ -66,28 +69,28 @@ export class Battle extends Phaser.Scene {
 
     this.add.rectangle(W / 2, H / 2, W, H, C.bg);
     // Header
-    panel(this, 16, 14, W - 32, 150, color);
-    const glyph = this.add.rectangle(0, 0, 92, 92, color, 0.16).setStrokeStyle(2, color, 0.9);
-    const letter = text(this, 0, 0, this.enemy === 'warden' ? 'W' : info.title[0]!, 54, color, true).setOrigin(0.5);
-    this.portrait = this.add.container(70, 90, [glyph, letter]);
+    panel(this, 16, 14, W - 32, 170, color);
+    const glyph = this.add.rectangle(0, 0, 120, 120, color, 0.16).setStrokeStyle(2, color, 0.9);
+    const art = this.enemy === 'warden' ? this.add.sprite(0, 0, 'warden').setScale(3.4).play('idle-warden') : this.add.sprite(0, 0, 'actors', (ACTOR_INDEX[this.enemy] ?? 1) * 2).setScale(6.5).play(`idle-${this.enemy}`);
+    this.portrait = this.add.container(92, 99, [glyph, art]);
     this.tweens.add({ targets: this.portrait, x: '+=3', y: '-=2', duration: 90, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    text(this, 140, 28, info.title, 30, color, true);
-    text(this, 140, 70, info.blurb, 15, C.dim).setWordWrapWidth(430);
-    this.teleText = text(this, 140, 118, '', 18, C.warn, true);
+    text(this, 180, 30, info.title, 36, color, true);
+    text(this, 180, 82, info.blurb, 17, C.dim).setWordWrapWidth(560);
+    this.teleText = text(this, 180, 132, '', 22, C.warn, true);
 
-    text(this, W - 270, 28, 'INTEGRITY', 13, C.dim);
-    for (let i = 0; i < info.maxIntegrity; i++) this.pips.push(this.add.rectangle(W - 262 + i * 36, 62, 28, 18, C.accent).setStrokeStyle(1, 0xffffff, 0.4));
-    this.progText = text(this, W - 270, 90, '', 16, C.fg);
-    this.tickText = text(this, W - 270, 118, '', 14, C.dim);
+    text(this, W - 340, 30, 'INTEGRITY', 14, C.dim);
+    for (let i = 0; i < info.maxIntegrity; i++) this.pips.push(this.add.rectangle(W - 326 + i * 40, 76, 32, 20, C.accent).setStrokeStyle(1, 0xffffff, 0.4));
+    this.progText = text(this, W - 340, 104, '', 18, C.fg);
+    this.tickText = text(this, W - 340, 138, '', 15, C.dim);
 
     // Arena
     const widest = Math.max(...info.lines.map((l) => l.length));
     const aw = widest * this.cw + 60;
-    panel(this, 16, ARENA_Y - 30, W - 32, LINE_H * info.lines.length + 70, C.line, 0x0d131a);
+    panel(this, 16, ARENA_Y - 34, W - 32, LINE_H * info.lines.length + 76, C.line, 0x0d131a);
     void aw;
     this.g = this.add.graphics().setDepth(1);
     info.lines.forEach((line, r) => {
-      text(this, ARENA_X - 38, ARENA_Y + r * LINE_H + 3, String(r + 1), 14, C.dim).setDepth(2);
+      text(this, ARENA_X - 48, ARENA_Y + r * LINE_H + 6, String(r + 1), 16, C.dim).setDepth(2);
       this.lineTexts.push(text(this, ARENA_X, ARENA_Y + r * LINE_H, line, FONT_SIZE, C.fg).setDepth(2));
     });
     this.curText = text(this, 0, 0, '', FONT_SIZE, 0x0a0e13, true).setDepth(4);
@@ -95,7 +98,7 @@ export class Battle extends Phaser.Scene {
     this.flash = this.add.rectangle(W / 2, H / 2, W, H, C.bad, 0).setDepth(40);
 
     // Bottom: key strip and move rack
-    const by = 470;
+    const by = BOTTOM_Y;
     panel(this, 16, by, W - 32, H - by - 14);
     text(this, 36, by + 12, 'keys', 13, C.dim);
     text(this, 36, by + 66, 'moves', 13, C.dim);
@@ -104,8 +107,8 @@ export class Battle extends Phaser.Scene {
       keycap(this, 36 + i * 44, by + 88, s.name, lvl >= 3 ? C.accent : lvl >= 1 ? C.normal : C.dim);
     });
     this.modeText = text(this, W - 36, by + 12, 'NORMAL', 14, C.normal, true).setOrigin(1, 0);
-    this.toast = text(this, W / 2, 440, '', 17, C.warn).setOrigin(0.5);
-    text(this, W - 36, by + 92, 'Esc: retreat', 13, C.dim).setOrigin(1, 0);
+    this.toast = text(this, W / 2, by - 30, '', 20, C.warn).setOrigin(0.5);
+    text(this, W - 36, by + 98, 'Esc: retreat', 14, C.dim).setOrigin(1, 0);
 
     bindKeys(this, (k) => this.onKey(k));
     sweepOut(this);
@@ -207,8 +210,8 @@ export class Battle extends Phaser.Scene {
   }
 
   private banner(title: string, color: number, sub: string): void {
-    const t = text(this, W / 2, 330, title, 54, color, true).setOrigin(0.5).setDepth(30).setAlpha(0);
-    const s = text(this, W / 2, 380, sub, 18, C.fg).setOrigin(0.5).setDepth(30).setAlpha(0);
+    const t = text(this, W / 2, 380, title, 64, color, true).setOrigin(0.5).setDepth(30).setAlpha(0);
+    const s = text(this, W / 2, 440, sub, 22, C.fg).setOrigin(0.5).setDepth(30).setAlpha(0);
     this.tweens.add({ targets: [t, s], alpha: 1, duration: 200, yoyo: true, hold: 900, onComplete: () => { t.destroy(); s.destroy(); } });
     sfx.warn();
   }
@@ -242,7 +245,7 @@ export class Battle extends Phaser.Scene {
     this.teleText.setText(main ? `>> ${main.text}` : '').setColor(main?.kind === 'sweep' || main?.kind === 'pulse' ? '#ff5c57' : '#ffb86c');
     this.modeText.setText(s.mode === 'normal' ? 'NORMAL' : s.mode.toUpperCase());
     this.strip.forEach((k) => k.destroy());
-    this.strip = s.keysUsed.slice(-18).map((k, i) => keycap(this, 36 + i * 40, 494, keyLabel(k), C.normal));
+    this.strip = s.keysUsed.slice(-18).map((k, i) => keycap(this, 36 + i * 40, BOTTOM_Y + 26, keyLabel(k), C.normal));
   }
 
   update(time: number): void {
@@ -326,8 +329,8 @@ export class Battle extends Phaser.Scene {
     const s = this.sim;
     const objs: Phaser.GameObjects.GameObject[] = [];
     objs.push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.78).setDepth(60));
-    objs.push(panel(this, 200, 130, W - 400, 330, won ? C.accent : C.bad).setDepth(61));
-    objs.push(text(this, W / 2, 170, won ? `${ENEMIES[this.enemy].title} PURGED` : 'INTEGRITY DEPLETED', 36, won ? C.accent : C.bad, true).setOrigin(0.5).setDepth(62));
+    objs.push(panel(this, 300, 150, W - 600, 400, won ? C.accent : C.bad).setDepth(61));
+    objs.push(text(this, W / 2, 200, won ? `${ENEMIES[this.enemy].title} PURGED` : 'INTEGRITY DEPLETED', 36, won ? C.accent : C.bad, true).setOrigin(0.5).setDepth(62));
     const rows = [
       ['keys pressed', String(s.keysUsed.length)],
       ['wasted strikes', String(s.wasted)],
@@ -336,10 +339,10 @@ export class Battle extends Phaser.Scene {
       ...(won ? [['XP earned', `+${xp}`]] : []),
     ];
     rows.forEach(([k, v], i) => {
-      objs.push(text(this, 290, 235 + i * 34, k!, 20, C.dim).setDepth(62));
-      objs.push(text(this, W - 290, 235 + i * 34, v!, 20, C.fg, true).setOrigin(1, 0).setDepth(62));
+      objs.push(text(this, 360, 275 + i * 40, k!, 22, C.dim).setDepth(62));
+      objs.push(text(this, W - 360, 275 + i * 40, v!, 22, C.fg, true).setOrigin(1, 0).setDepth(62));
     });
-    objs.push(text(this, W / 2, 410, won ? 'Enter: back to the map' : 'Enter: retry    Esc: retreat', 17, C.warn).setOrigin(0.5).setDepth(62));
+    objs.push(text(this, W / 2, 495, won ? 'Enter: back to the map' : 'Enter: retry    Esc: retreat', 17, C.warn).setOrigin(0.5).setDepth(62));
     this.overlay = objs;
     this.won = won;
   }

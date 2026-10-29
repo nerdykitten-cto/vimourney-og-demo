@@ -6,8 +6,9 @@ import { SKILLS } from '../sim/mastery';
 import { getNav, log, markDefeated, mastery, sfx } from '../session';
 import { bindKeys, burst, C, H, keycap, keyLabel, panel, sweepIn, sweepOut, text, W } from '../ui';
 
-const TILE = 24;
-const MY = 120;
+const TILE = 32;
+const MY = 104;
+const ACTOR_FRAME: Record<string, number> = { sentry: 1, patrol: 2, stalker: 3, crawler: 4, blinker: 5, lesson: 6 };
 
 const COLORS: Record<string, number> = { sentry: C.warn, patrol: C.star, stalker: C.bad, warden: C.visual, lesson: C.accent };
 
@@ -24,7 +25,7 @@ export class World extends Phaser.Scene {
   private nav = getNav();
   private ents = new Map<string, Phaser.GameObjects.Container>();
   private player!: Phaser.GameObjects.Container;
-  private doorGfx: Phaser.GameObjects.Graphics | null = null;
+  private doorGfx: Phaser.GameObjects.Image | null = null;
   private msg!: Phaser.GameObjects.Text;
   private pendingText!: Phaser.GameObjects.Text;
   private winsText!: Phaser.GameObjects.Text;
@@ -84,23 +85,16 @@ export class World extends Phaser.Scene {
 
   private drawMap(): void {
     const rows = this.nav.lines.length;
-    const g = this.add.graphics();
-    g.fillStyle(0x0d131a, 1).fillRect(0, MY, W, rows * TILE);
-    g.lineStyle(1, 0x182230, 1);
-    for (let c = 0; c <= 40; c++) g.lineBetween(c * TILE + 0.5, MY, c * TILE + 0.5, MY + rows * TILE);
-    for (let r = 0; r <= rows; r++) g.lineBetween(0, MY + r * TILE + 0.5, W, MY + r * TILE + 0.5);
+    // Floor and walls from the Aseprite tile sheet, scaled 2x with nearest filtering.
     this.nav.area.lines.forEach((line, r) => {
       [...line].forEach((ch, c) => {
-        const x = c * TILE;
-        const y = MY + r * TILE;
-        if (ch === '#') {
-          g.fillStyle(0x2b3b50, 1).fillRect(x + 1, y + 1, TILE - 1, TILE - 1);
-          g.fillStyle(0x3d5470, 1).fillRect(x + 1, y + 1, TILE - 1, 3);
-          g.fillStyle(0x1c2736, 1).fillRect(x + 1, y + TILE - 4, TILE - 1, 3);
-        }
+        const wall = ch === '#';
+        const h = (r * 31 + c * 17 + r * c) % 11;
+        const frame = wall ? 3 : h === 0 ? 2 : h <= 2 ? 1 : 0;
+        this.add.image(c * TILE, MY + r * TILE, 'tiles', frame).setOrigin(0).setScale(TILE / 16);
       });
     });
-    g.lineStyle(2, C.line, 1).strokeRect(0, MY, W, rows * TILE);
+    this.add.graphics().lineStyle(2, C.line, 1).strokeRect(0, MY, W, rows * TILE);
 
     for (const e of this.nav.entities.values()) this.ents.set(e.id, this.makeEntity(e));
     this.nav.lines.forEach((line, r) => {
@@ -113,32 +107,27 @@ export class World extends Phaser.Scene {
     const { x, y } = this.center(e.pos);
     const col = COLORS[e.kind] ?? C.fg;
     const big = e.kind === 'warden';
-    const s = big ? 1.25 : 1;
-    const shadow = this.add.ellipse(0, 9, 20 * s, 7, 0x000000, 0.4);
-    const body = this.add.rectangle(0, 0, 18 * s, 18 * s, col).setStrokeStyle(2, 0xffffff, 0.5);
-    const letter = text(this, 0, 0, e.kind === 'lesson' ? '?' : e.glyph, big ? 20 : 16, 0x0a0e13, true).setOrigin(0.5);
-    const glow = this.add.rectangle(0, 0, 28 * s, 28 * s, col, 0.18);
-    const cont = this.add.container(x, y, [shadow, glow, body, letter]).setDepth(5);
-    this.tweens.add({ targets: [body, letter], y: '-=3', duration: 700 + Math.random() * 400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.tweens.add({ targets: glow, alpha: { from: 0.1, to: 0.3 }, duration: 900, yoyo: true, repeat: -1 });
+    const shadow = this.add.ellipse(0, 12, big ? 40 : 22, 7, 0x000000, 0.45);
+    const glow = this.add.ellipse(0, 0, big ? 56 : 38, big ? 56 : 38, col, 0.14);
+    const sprite = big
+      ? this.add.sprite(0, -4, 'warden').setScale(1.5).play('idle-warden')
+      : this.add.sprite(0, 0, 'actors', (ACTOR_FRAME[e.kind] ?? 1) * 2).setScale(TILE / 16).play(`idle-${e.kind === 'lesson' ? 'lesson' : e.kind}`);
+    const cont = this.add.container(x, y, [shadow, glow, sprite]).setDepth(5);
+    this.tweens.add({ targets: glow, alpha: { from: 0.08, to: 0.26 }, duration: 900, yoyo: true, repeat: -1 });
     return cont;
   }
 
-  private makeDoor(p: Pos): Phaser.GameObjects.Graphics {
-    const g = this.add.graphics().setDepth(4);
-    const x = p.col * TILE;
-    const y = MY + p.row * TILE;
-    g.fillStyle(0x3a1218, 1).fillRect(x + 1, y + 1, TILE - 1, TILE - 1);
-    g.lineStyle(2, C.bad, 1);
-    for (let i = 0; i < 4; i++) g.lineBetween(x + 4 + i * 5, y + 3, x + 4 + i * 5, y + TILE - 3);
-    this.tweens.add({ targets: g, alpha: { from: 0.7, to: 1 }, duration: 700, yoyo: true, repeat: -1 });
-    return g;
+  private makeDoor(p: Pos): Phaser.GameObjects.Image {
+    const img = this.add.image(p.col * TILE, MY + p.row * TILE, 'tiles', 4).setOrigin(0).setScale(TILE / 16).setDepth(4);
+    this.tweens.add({ targets: img, alpha: { from: 0.75, to: 1 }, duration: 700, yoyo: true, repeat: -1 });
+    return img;
   }
 
   private makePlayer(x: number, y: number): Phaser.GameObjects.Container {
-    const glow = this.add.rectangle(0, 0, 34, 34, C.normal, 0.22);
-    const body = this.add.rectangle(0, 0, 20, 20, C.normal).setStrokeStyle(2, 0xffffff, 0.8);
-    const cont = this.add.container(x, y, [glow, body]).setDepth(10);
+    const glow = this.add.ellipse(0, 0, 46, 46, C.normal, 0.2);
+    const shadow = this.add.ellipse(0, 12, 22, 7, 0x000000, 0.45);
+    const body = this.add.sprite(0, 0, 'actors', 0).setScale(TILE / 16).play('idle-player');
+    const cont = this.add.container(x, y, [shadow, glow, body]).setDepth(10);
     this.tweens.add({ targets: glow, scale: { from: 0.9, to: 1.2 }, alpha: { from: 0.3, to: 0.12 }, duration: 900, yoyo: true, repeat: -1 });
     return cont;
   }
@@ -235,7 +224,7 @@ export class World extends Phaser.Scene {
     path.forEach((p, i) => {
       if (i % step !== 0) return;
       const c = this.center(p);
-      const r = this.add.rectangle(c.x, c.y, 18, 18, C.normal, 0.45).setDepth(6);
+      const r = this.add.rectangle(c.x, c.y, 24, 24, C.normal, 0.45).setDepth(6);
       this.tweens.add({ targets: r, alpha: 0, scale: 0.4, duration: 380, delay: i * 8, onComplete: () => r.destroy() });
     });
   }

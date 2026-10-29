@@ -5,10 +5,18 @@ import { createRng } from '../sim/rng';
 import { log, mastery, sfx, store } from '../session';
 import { bindKeys, burst, C, charWidth, H, keyLabel, panel, text, W } from '../ui';
 
-const FONT_SIZE = 20;
-const AX = 60;
-const AY = 150;
-const LH = 40;
+const FONT_SIZE = 26;
+const AX = 90;
+const AY = 170;
+const LH = 52;
+
+const CHEAT = [
+  ['w  b  e', 'next word / previous word / end of word'],
+  ['0  ^  $', 'start of line / first letter / end of line'],
+  ['j  k', 'down / up (a count helps: 3j)'],
+  ['f + letter', 'jump onto the next letter on the line, ; repeats'],
+  ['gg  G', 'first / last line'],
+];
 
 type Phase = 'ready' | 'play' | 'over';
 
@@ -23,6 +31,7 @@ export class Arcade extends Phaser.Scene {
   private comboText!: Phaser.GameObjects.Text;
   private feed!: Phaser.GameObjects.Text;
   private info!: Phaser.GameObjects.Text;
+  private hintText!: Phaser.GameObjects.Text;
   private keysText!: Phaser.GameObjects.Text;
   private pendingText!: Phaser.GameObjects.Text;
   private lineTexts: Phaser.GameObjects.Text[] = [];
@@ -43,19 +52,20 @@ export class Arcade extends Phaser.Scene {
     this.lineTexts = [];
     this.cw = charWidth(this, FONT_SIZE);
     this.add.rectangle(W / 2, H / 2, W, H, C.bg);
-    text(this, 24, 14, 'ARCADE ROOM: TARGET RUSH', 24, C.visual, true);
-    this.scoreText = text(this, W - 24, 14, 'SCORE 0', 24, C.star, true).setOrigin(1, 0);
-    this.timeText = text(this, W / 2, 10, '', 40, C.fg, true).setOrigin(0.5, 0);
-    this.comboText = text(this, 24, 50, '', 18, C.accent, true);
+    text(this, 24, 16, 'ARCADE ROOM: TARGET RUSH', 28, C.visual, true);
+    this.scoreText = text(this, W - 24, 16, 'SCORE 0', 28, C.star, true).setOrigin(1, 0);
+    this.timeText = text(this, W / 2, 8, '', 48, C.fg, true).setOrigin(0.5, 0);
+    this.comboText = text(this, 24, 60, '', 20, C.accent, true);
     this.pendingText = text(this, W - 24, 56, '', 18, C.warn, true).setOrigin(1, 0);
-    panel(this, 16, AY - 24, W - 32, LH * 7 + 44, C.line, 0x0d131a);
+    panel(this, 16, AY - 28, W - 32, LH * 7 + 48, C.line, 0x0d131a);
     this.g = this.add.graphics().setDepth(1);
     this.curText = text(this, 0, 0, '', FONT_SIZE, 0x0a0e13, true).setDepth(4);
     this.tgtText = text(this, 0, 0, '', FONT_SIZE, C.visual, true).setDepth(3);
-    panel(this, 16, 470, W - 32, 114);
-    this.feed = text(this, 36, 484, '', 16, C.fg);
-    this.keysText = text(this, 36, 520, '', 16, C.normal);
-    this.info = text(this, 36, 556, '', 14, C.dim);
+    panel(this, 16, 568, W - 32, 136);
+    this.feed = text(this, 36, 582, '', 19, C.fg);
+    this.keysText = text(this, 36, 614, '', 19, C.normal);
+    this.hintText = text(this, 36, 646, '', 19, C.warn, true);
+    this.info = text(this, 36, 678, '', 15, C.dim);
 
     this.newRound(false);
     bindKeys(this, (k) => this.onKey(k));
@@ -73,14 +83,19 @@ export class Arcade extends Phaser.Scene {
     this.clearOverlay();
     this.phase = 'ready';
     const o: Phaser.GameObjects.GameObject[] = [];
-    o.push(this.add.rectangle(W / 2, 300, 560, 150, 0x000000, 0.8).setDepth(30));
-    o.push(text(this, W / 2, 252, 'Reach each glowing target in as few keys as you can.', 18, C.fg).setOrigin(0.5).setDepth(31));
-    o.push(text(this, W / 2, 284, `${RUSH_SECONDS} seconds. Fewer keys = more points. Clean chains build a combo.`, 15, C.dim).setOrigin(0.5).setDepth(31));
-    o.push(text(this, W / 2, 322, `Enter: start    d: ${daily ? 'random seed' : 'daily seed'}    Esc: menu`, 17, C.warn).setOrigin(0.5).setDepth(31));
+    o.push(this.add.rectangle(W / 2, 340, 880, 360, 0x000000, 0.88).setDepth(30), panel(this, W / 2 - 440, 160, 880, 360, C.visual).setDepth(30));
+    o.push(text(this, W / 2, 190, 'Reach each glowing target in as few keys as you can.', 24, C.fg, true).setOrigin(0.5).setDepth(31));
+    o.push(text(this, W / 2, 228, `${RUSH_SECONDS} seconds. Fewer keys = more points. Clean chains build a combo.`, 17, C.dim).setOrigin(0.5).setDepth(31));
+    CHEAT.forEach(([k, d], i) => {
+      o.push(text(this, W / 2 - 360, 276 + i * 30, k, 19, C.normal, true).setDepth(31));
+      o.push(text(this, W / 2 - 200, 278 + i * 30, d, 17, C.fg).setDepth(31));
+    });
+    o.push(text(this, W / 2, 478, `Enter: start    d: ${daily ? 'random seed' : 'daily seed'}    Esc: menu`, 19, C.warn).setOrigin(0.5).setDepth(31));
     this.overlay = o;
     this.info.setText(daily ? `Daily seed ${this.seed}: everyone gets the same text today.` : 'Random seed.');
     this.feed.setText('');
     this.keysText.setText('');
+    this.hintText.setText('');
   }
 
   private clearOverlay(): void {
@@ -118,13 +133,14 @@ export class Arcade extends Phaser.Scene {
     if (r.capture) {
       const c = r.capture;
       const p = this.cellPx(st.cursor.row, st.cursor.col);
-      burst(this, p.x + this.cw / 2, p.y + 14, C.visual, 18, 90);
+      burst(this, p.x + this.cw / 2, p.y + 18, C.visual, 18, 90);
       sfx.capture(st.combo);
       this.cameras.main.shake(70, 0.002);
       const extra = Math.max(0, c.keys.length - c.best.length);
       this.feed.setText(`+${c.points}   you used ${c.keys.length}, best was ${c.best.length}${c.best.length ? `  (${c.best.map(keyLabel).join(' ')})` : ''}${extra === 0 ? '   PERFECT' : ''}`);
       this.feed.setColor(extra === 0 ? '#5af78e' : extra <= 1 ? '#cbd5e1' : '#ffb86c');
     }
+    this.hintText.setText(st.hint ? `Hint: the best route is ${st.hint.map(keyLabel).join(' ')}  (${st.hint.length} keys)` : r.capture ? '' : this.hintText.text);
     this.refresh();
   }
 
@@ -194,16 +210,16 @@ export class Arcade extends Phaser.Scene {
     sfx.win();
 
     const o: Phaser.GameObjects.GameObject[] = [];
-    o.push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.8).setDepth(40), panel(this, 150, 70, W - 300, 460, C.visual).setDepth(41));
-    o.push(text(this, W / 2, 100, "TIME'S UP", 40, C.visual, true).setOrigin(0.5).setDepth(42));
-    o.push(text(this, W / 2, 160, `${s.score} points`, 34, C.star, true).setOrigin(0.5).setDepth(42));
-    o.push(text(this, W / 2, 204, `${s.captures.length} targets   ${waste} extra keys${xp ? `   +${xp} XP (daily bonus)` : ''}`, 16, C.dim).setOrigin(0.5).setDepth(42));
-    o.push(text(this, 200, 244, 'TOP TEN', 14, C.dim).setDepth(42));
+    o.push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.8).setDepth(40), panel(this, 300, 70, W - 600, 580, C.visual).setDepth(41));
+    o.push(text(this, W / 2, 110, "TIME'S UP", 48, C.visual, true).setOrigin(0.5).setDepth(42));
+    o.push(text(this, W / 2, 180, `${s.score} points`, 40, C.star, true).setOrigin(0.5).setDepth(42));
+    o.push(text(this, W / 2, 230, `${s.captures.length} targets   ${waste} extra keys${xp ? `   +${xp} XP (daily bonus)` : ''}`, 16, C.dim).setOrigin(0.5).setDepth(42));
+    o.push(text(this, 360, 275, 'TOP TEN', 15, C.dim).setDepth(42));
     next.slice(0, 10).forEach((h, i) => {
       const mine = rank === i + 1;
-      o.push(text(this, 200, 268 + i * 24, `${String(i + 1).padStart(2)}.  ${String(h.score).padStart(5)}   ${h.captures} targets   ${h.date}`, 16, mine ? C.accent : C.fg, mine).setDepth(42));
+      o.push(text(this, 360, 302 + i * 28, `${String(i + 1).padStart(2)}.  ${String(h.score).padStart(5)}   ${h.captures} targets   ${h.date}`, 16, mine ? C.accent : C.fg, mine).setDepth(42));
     });
-    o.push(text(this, W / 2, 506, 'Enter: again    Esc: menu', 17, C.warn).setOrigin(0.5).setDepth(42));
+    o.push(text(this, W / 2, 616, 'Enter: again    Esc: menu', 17, C.warn).setOrigin(0.5).setDepth(42));
     this.overlay = o;
   }
 }

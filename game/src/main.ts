@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Arcade } from './scenes/Arcade';
+import { Boot } from './scenes/Boot';
 import { Battle } from './scenes/Battle';
 import { Sheet } from './scenes/Sheet';
 import { Title } from './scenes/Title';
@@ -13,6 +14,6 @@ new Phaser.Game({
   height: H,
   backgroundColor: C.bg,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [Title, World, Battle, Sheet, Arcade],
-  render: { antialias: true },
+  scene: [Boot, Title, World, Battle, Sheet, Arcade],
+  render: { antialias: true, roundPixels: true },
 });

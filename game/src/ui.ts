@@ -1,8 +1,11 @@
 import Phaser from 'phaser';
 import { normalizeKey } from '@kbm/shared';
 
-export const W = 960;
-export const H = 600;
+export const W = 1280;
+export const H = 720;
+
+/** Text is rendered at device resolution so it stays sharp when the canvas is scaled to the window. */
+export const TEXT_RES = Math.min(3, Math.max(2, Math.ceil(window.devicePixelRatio || 1)));
 
 export const C = {
   bg: 0x0a0e13,
@@ -24,7 +27,7 @@ export const hex = (n: number): string => `#${n.toString(16).padStart(6, '0')}`;
 export const FONT = 'ui-monospace, "SF Mono", "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace';
 
 export function text(scene: Phaser.Scene, x: number, y: number, s: string, size = 18, color = C.fg, bold = false): Phaser.GameObjects.Text {
-  return scene.add.text(x, y, s, { fontFamily: FONT, fontSize: `${size}px`, color: hex(color), fontStyle: bold ? 'bold' : 'normal' });
+  return scene.add.text(x, y, s, { fontFamily: FONT, fontSize: `${size}px`, color: hex(color), fontStyle: bold ? 'bold' : 'normal', resolution: TEXT_RES });
 }
 
 export function panel(scene: Phaser.Scene, x: number, y: number, w: number, h: number, border: number = C.line, fill: number = C.panel): Phaser.GameObjects.Graphics {
