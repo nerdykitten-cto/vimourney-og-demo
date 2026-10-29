@@ -38,3 +38,5 @@ export function setMuted(m: boolean): void {
   sfx.setMuted(m);
   store.set('muted', m);
 }
+
+log.add('session-start', { viewport: `${innerWidth}x${innerHeight}`, dpr: devicePixelRatio, lang: navigator.language });

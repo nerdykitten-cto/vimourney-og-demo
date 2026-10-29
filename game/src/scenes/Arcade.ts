@@ -41,6 +41,7 @@ export class Arcade extends Phaser.Scene {
   private daily = false;
   private seed = 1;
   private lastTick = -1;
+  private hintsShown = 0;
 
   constructor() {
     super('Arcade');
@@ -108,6 +109,7 @@ export class Arcade extends Phaser.Scene {
       if (key === 'Enter') {
         this.clearOverlay();
         this.phase = 'play';
+        this.hintsShown = 0;
         log.add('arcade-start', { seed: this.seed, daily: this.daily });
       } else if (key === 'd') this.newRound(!this.daily);
       else if (key === 'Escape') this.scene.start('Title');
@@ -119,6 +121,7 @@ export class Arcade extends Phaser.Scene {
       return;
     }
     if (key === 'Escape') {
+      log.add('arcade-quit', { score: this.game_.score, captures: this.game_.captures.length, timeLeft: Math.round(this.game_.timeLeft), seed: this.seed });
       this.scene.start('Title');
       return;
     }
@@ -140,6 +143,7 @@ export class Arcade extends Phaser.Scene {
       this.feed.setText(`+${c.points}   you used ${c.keys.length}, best was ${c.best.length}${c.best.length ? `  (${c.best.map(keyLabel).join(' ')})` : ''}${extra === 0 ? '   PERFECT' : ''}`);
       this.feed.setColor(extra === 0 ? '#5af78e' : extra <= 1 ? '#cbd5e1' : '#ffb86c');
     }
+    if (st.hint && this.hintText.text === '') this.hintsShown++;
     this.hintText.setText(st.hint ? `Hint: the best route is ${st.hint.map(keyLabel).join(' ')}  (${st.hint.length} keys)` : r.capture ? '' : this.hintText.text);
     this.refresh();
   }
@@ -206,7 +210,8 @@ export class Arcade extends Phaser.Scene {
       store.set('arcade-xp-day', today);
     }
     const waste = s.captures.reduce((n, c) => n + Math.max(0, c.keys.length - c.best.length), 0);
-    log.add('arcade-end', { score: s.score, captures: s.captures.length, wastedKeys: waste, rank, seed: this.seed });
+    const detail = s.captures.map((c) => `${c.keys.length}/${c.best.length}`).join(' ');
+    log.add('arcade-end', { score: s.score, captures: s.captures.length, wastedKeys: waste, rank, seed: this.seed, keysVsBest: detail, hintsShown: this.hintsShown, abandoned: s.keysSince.length });
     sfx.win();
 
     const o: Phaser.GameObjects.GameObject[] = [];

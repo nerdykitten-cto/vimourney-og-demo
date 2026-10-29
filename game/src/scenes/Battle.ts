@@ -42,6 +42,7 @@ export class Battle extends Phaser.Scene {
   private seed = 1;
   private startedAt = 0;
   private dodged = 0;
+  private damageBy: Record<string, number> = {};
 
   constructor() {
     super('Battle');
@@ -61,6 +62,7 @@ export class Battle extends Phaser.Scene {
     this.pips = [];
     this.strip = [];
     this.dodged = 0;
+    this.damageBy = {};
     this.startedAt = Date.now();
     this.sim = new Sim(this.enemy, createVimEngine(), createRng(this.seed));
     this.cw = charWidth(this, FONT_SIZE);
@@ -126,7 +128,7 @@ export class Battle extends Phaser.Scene {
       return;
     }
     if (key === 'Escape') {
-      log.add('retreat', { enemy: this.enemy, tick: this.sim.tick });
+      log.add('retreat', { enemy: this.enemy, ...this.stats() });
       this.leave('retreat');
       return;
     }
@@ -165,13 +167,13 @@ export class Battle extends Phaser.Scene {
         this.say('Nothing to strike here', C.dim);
         break;
       case 'pulse':
-        this.hurt('PULSE');
+        this.hurt('PULSE', 'pulse');
         break;
       case 'stalker-hit':
-        this.hurt('THE STALKER CAUGHT YOU');
+        this.hurt('THE STALKER CAUGHT YOU', 'stalker');
         break;
       case 'sweep':
-        if (e.hit) this.hurt(`SWEPT: row ${e.row + 1}`);
+        if (e.hit) this.hurt(`SWEPT: row ${e.row + 1}`, 'sweep');
         else {
           this.dodged++;
           this.say('DODGED!', C.accent);
@@ -195,7 +197,8 @@ export class Battle extends Phaser.Scene {
     }
   }
 
-  private hurt(label: string): void {
+  private hurt(label: string, source = label): void {
+    this.damageBy[source] = (this.damageBy[source] ?? 0) + 1;
     sfx.damage();
     this.cameras.main.shake(220, 0.008);
     this.flash.setAlpha(0.35);
@@ -321,8 +324,16 @@ export class Battle extends Phaser.Scene {
       mastery.addXp(xp);
       sfx.win();
     } else sfx.lose();
-    log.add(won ? 'battle-won' : 'battle-lost', { enemy: this.enemy, keys: s.keysUsed.length, wasted: s.wasted, tick: s.tick, seconds, integrity: s.integrity });
+    log.add(won ? 'battle-won' : 'battle-lost', { enemy: this.enemy, seconds, ...this.stats() });
     this.time.delayedCall(won ? 500 : 300, () => this.showResult(won, xp, seconds));
+  }
+
+  /** What happened in this fight, for the playtest log. */
+  private stats(): Record<string, unknown> {
+    const s = this.sim;
+    const moves: Record<string, number> = {};
+    for (const k of s.keysUsed) moves[k] = (moves[k] ?? 0) + 1;
+    return { keys: s.keysUsed.length, wasted: s.wasted, tick: s.tick, hits: `${s.hitsDone}/${s.hitsNeeded}`, phase: s.phase, integrity: s.integrity, dodged: this.dodged, damage: this.damageBy, moves };
   }
 
   private showResult(won: boolean, xp: number, seconds: number): void {
