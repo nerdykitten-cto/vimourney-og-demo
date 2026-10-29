@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Rebuild all sprites: Aseprite scripts draw the .aseprite sources, then Aseprite exports sheets to public/assets.
+set -euo pipefail
+cd "$(dirname "$0")"
+ASE="${ASEPRITE:-$HOME/.steam/debian-installation/steamapps/common/Aseprite/aseprite}"
+OUT="$(pwd)/../public/assets"
+mkdir -p src "$OUT"
+"$ASE" -b --script-param out=src --script build.lua
+cd src
+sheet() { local out=$1; shift; "$ASE" -b "$@" --sheet "$OUT/$out.png" --sheet-type horizontal; }
+sheet actors player.aseprite sentry.aseprite patrol.aseprite stalker.aseprite crawler.aseprite blinker.aseprite lesson.aseprite
+sheet tiles floor0.aseprite floor1.aseprite floor2.aseprite wall.aseprite doorClosed.aseprite doorOpen.aseprite
+sheet warden warden.aseprite
