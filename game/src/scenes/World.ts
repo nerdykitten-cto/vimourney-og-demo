@@ -1,27 +1,19 @@
 import Phaser from 'phaser';
 import type { Pos } from '@kbm/shared';
-import { ENEMIES, type EnemyId } from '../sim/battle';
+import { BOSSES, ENEMIES, type EnemyId } from '../sim/battle';
 import type { Entity } from '../sim/map';
 import { SKILLS } from '../sim/mastery';
-import { getNav, log, markDefeated, mastery, sfx } from '../session';
+import { getNav, isCleared, log, markCleared, markDefeated, mastery, sfx } from '../session';
 import { bindKeys, burst, C, H, keycap, keyLabel, panel, sweepIn, sweepOut, text, W } from '../ui';
 
 const TILE = 32;
 const MY = 104;
-const ACTOR_FRAME: Record<string, number> = { sentry: 1, patrol: 2, stalker: 3, crawler: 4, blinker: 5, lesson: 6 };
+const ACTOR_FRAME: Record<string, number> = { sentry: 1, patrol: 2, stalker: 3, crawler: 4, blinker: 5, lesson: 6, sniper: 7, hopper: 8 };
 
-const COLORS: Record<string, number> = { sentry: C.warn, patrol: C.star, stalker: C.bad, warden: C.visual, lesson: C.accent };
-
-const LESSON = [
-  ['h j k l', 'step left, down, up, right'],
-  ['w  b', 'hop to the next / previous landmark in the row'],
-  ['e', 'hop to the end of a landmark'],
-  ['0  $', 'run to the left / right edge of the row'],
-  ['f + letter', 'hook onto the next tile with that letter (try f S)'],
-  ['; ,', 'repeat that hook forward / backward'],
-];
+const COLORS: Record<string, number> = { sentry: C.warn, patrol: C.star, stalker: C.bad, crawler: C.accent, blinker: 0x8b5cf6, sniper: C.normal, hopper: C.accent, seeker: C.normal, warden: C.visual, lesson: C.accent };
 
 export class World extends Phaser.Scene {
+  private areaId = 'area-1';
   private nav = getNav();
   private ents = new Map<string, Phaser.GameObjects.Container>();
   private player!: Phaser.GameObjects.Container;
@@ -34,18 +26,19 @@ export class World extends Phaser.Scene {
   private cmd: string[] = [];
   private busy = false;
   private overlay: Phaser.GameObjects.GameObject[] | null = null;
-  private resultData: { result?: string; enemy?: EnemyId; entityId?: string } = {};
+  private resultData: { result?: string; enemy?: EnemyId; entityId?: string; area?: string } = {};
 
   constructor() {
     super('World');
   }
 
-  init(data: { result?: string; enemy?: EnemyId; entityId?: string }): void {
+  init(data: { result?: string; enemy?: EnemyId; entityId?: string; area?: string }): void {
     this.resultData = data ?? {};
+    this.areaId = data?.area ?? 'area-1';
   }
 
   create(): void {
-    this.nav = getNav();
+    this.nav = getNav(this.areaId);
     this.ents.clear();
     this.strip = [];
     this.keys = [];
@@ -73,7 +66,7 @@ export class World extends Phaser.Scene {
 
     if (this.resultData.result === 'won' && this.resultData.entityId) this.afterWin(this.resultData.entityId, this.resultData.enemy!);
     else if (!this.nav.isDoorOpen) this.say(`Beat ${this.nav.area.doorNeeds} enemies to open the door.`, C.dim);
-    else this.say('The door is open. The Warden waits.', C.visual);
+    else this.say(`The door is open. ${ENEMIES[this.nav.area.boss as EnemyId].title} waits.`, C.visual);
     this.resultData = {};
   }
 
@@ -242,7 +235,7 @@ export class World extends Phaser.Scene {
     log.add('battle-start', { enemy: id });
     this.cameras.main.shake(160, 0.004);
     this.time.delayedCall(260, () => {
-      sweepIn(this, () => this.scene.start('Battle', { enemy: id, entityId: e.id }));
+      sweepIn(this, () => this.scene.start('Battle', { enemy: id, entityId: e.id, area: this.areaId }));
     });
   }
 
@@ -255,14 +248,15 @@ export class World extends Phaser.Scene {
       this.ents.delete(entityId);
     }
     this.nav.defeat(entityId);
-    markDefeated(entityId);
+    markDefeated(this.areaId, entityId);
     this.refreshHud();
-    if (enemy === 'warden') {
+    if (BOSSES.has(enemy)) {
+      markCleared(this.areaId);
       this.time.delayedCall(500, () => this.openCleared());
       return;
     }
     if (!doorWas && this.nav.isDoorOpen) {
-      this.say('The door grinds open. The Warden waits behind it.', C.visual);
+      this.say('The door grinds open. The boss waits behind it.', C.visual);
       this.cameras.main.shake(400, 0.006);
       sfx.win();
       if (this.doorGfx) this.tweens.add({ targets: this.doorGfx, alpha: 0, duration: 500, onComplete: () => this.doorGfx?.destroy() });
@@ -277,9 +271,9 @@ export class World extends Phaser.Scene {
     const objs: Phaser.GameObjects.GameObject[] = [];
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setDepth(60);
     objs.push(dim, panel(this, 120, 110, W - 240, 380, C.accent).setDepth(61));
-    objs.push(text(this, 150, 130, 'FIELD GUIDE: MOVEMENT', 26, C.accent, true).setDepth(62));
+    objs.push(text(this, 150, 130, `FIELD GUIDE: ${this.nav.area.title.split(': ')[1]!.toUpperCase()}`, 26, C.accent, true).setDepth(62));
     objs.push(text(this, 150, 172, 'The map is text, so the same keys that edit text move you.', 16, C.dim).setDepth(62));
-    LESSON.forEach(([k, d], i) => {
+    this.nav.area.lesson.forEach(([k, d], i) => {
       objs.push(text(this, 150, 220 + i * 40, k, 20, C.normal, true).setDepth(62));
       objs.push(text(this, 330, 222 + i * 40, d, 17, C.fg).setDepth(62));
     });
@@ -296,10 +290,9 @@ export class World extends Phaser.Scene {
   private openCleared(): void {
     const objs: Phaser.GameObjects.GameObject[] = [];
     objs.push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.75).setDepth(60), panel(this, 180, 150, W - 360, 300, C.accent).setDepth(61));
-    objs.push(text(this, W / 2, 190, 'AREA 1 CLEARED', 40, C.accent, true).setOrigin(0.5).setDepth(62));
+    objs.push(text(this, W / 2, 190, `${this.nav.area.title.split(':')[0]!.toUpperCase()} CLEARED`, 40, C.accent, true).setOrigin(0.5).setDepth(62));
     objs.push(text(this, W / 2, 250, `Level ${mastery.characterLevel}   ${mastery.xp} XP`, 22, C.star).setOrigin(0.5).setDepth(62));
-    objs.push(text(this, W / 2, 300, 'In the full game, the next area opens with new moves: f t ; ,', 16, C.fg).setOrigin(0.5).setDepth(62));
-    objs.push(text(this, W / 2, 330, 'and its enemies still ask for what you learned here.', 16, C.fg).setOrigin(0.5).setDepth(62));
+    this.nav.area.clearedText.forEach((line, i) => objs.push(text(this, W / 2, 300 + i * 30, line, 18, C.fg).setOrigin(0.5).setDepth(62)));
     objs.push(text(this, W / 2, 400, 'Enter: back to the menu', 16, C.warn).setOrigin(0.5).setDepth(62));
     this.overlay = objs;
     log.add('area-cleared');

@@ -1,5 +1,5 @@
 import { createVimEngine } from '@kbm/vim';
-import { area1 } from './sim/area1';
+import { AREAS, areaById } from './sim/area2';
 import { PlaytestLog } from './sim/log';
 import { MapNav } from './sim/map';
 import { Mastery } from './sim/mastery';
@@ -12,25 +12,39 @@ export const mastery = new Mastery(store);
 export const log = new PlaytestLog(store);
 export const sfx = createSfx(store.get<boolean>('muted', false));
 
-let nav: MapNav | null = null;
+const navs = new Map<string, MapNav>();
+const defeatedKey = (areaId: string): string => (areaId === 'area-1' ? 'defeated' : `defeated-${areaId}`);
 
-/** The area map, rebuilt from the saved list of defeated enemies the first time it is needed. */
-export function getNav(): MapNav {
+/** An area's map, rebuilt from the saved list of defeated enemies the first time it is needed. */
+export function getNav(areaId = 'area-1'): MapNav {
+  let nav = navs.get(areaId);
   if (!nav) {
-    nav = new MapNav(createVimEngine(), area1);
-    for (const id of store.get<string[]>('defeated', [])) nav.defeat(id);
+    nav = new MapNav(createVimEngine(), areaById(areaId));
+    for (const id of store.get<string[]>(defeatedKey(areaId), [])) nav.defeat(id);
+    navs.set(areaId, nav);
   }
   return nav;
 }
 
-export function markDefeated(id: string): void {
-  const list = store.get<string[]>('defeated', []);
-  if (!list.includes(id)) store.set('defeated', [...list, id]);
+export function markDefeated(areaId: string, id: string): void {
+  const list = store.get<string[]>(defeatedKey(areaId), []);
+  if (!list.includes(id)) store.set(defeatedKey(areaId), [...list, id]);
+}
+
+export function markCleared(areaId: string): void {
+  store.set(`cleared-${areaId}`, true);
+}
+
+export function isCleared(areaId: string): boolean {
+  return store.get<boolean>(`cleared-${areaId}`, false);
 }
 
 export function resetProgress(): void {
-  nav = null;
-  store.set('defeated', []);
+  navs.clear();
+  for (const a of AREAS) {
+    store.set(defeatedKey(a.id), []);
+    store.set(`cleared-${a.id}`, false);
+  }
   mastery.reset();
 }
 

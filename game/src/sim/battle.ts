@@ -1,10 +1,22 @@
 import type { Engine, Pos } from '@kbm/shared';
 import type { Rng } from './rng';
 
-export type EnemyId = 'sentry' | 'patrol' | 'stalker' | 'warden';
+export type EnemyId = 'sentry' | 'patrol' | 'stalker' | 'crawler' | 'blinker' | 'sniper' | 'hopper' | 'seeker' | 'warden';
+
+/** Bosses end an area. */
+export const BOSSES: ReadonlySet<EnemyId> = new Set(['warden', 'seeker']);
 
 /** Keys usable in area 1 battles. */
 export const BATTLE_KEYS = new Set(['h', 'j', 'k', 'l', 'w', 'b', 'e', '0', '$', 'x']);
+/** Added in area 2. */
+export const FIND_KEYS = new Set(['f', 'F', 't', 'T', ';', ',']);
+const AREA2 = new Set<EnemyId>(['sniper', 'hopper', 'seeker']);
+
+const nth = (line: string, ch: string, n: number): number => {
+  let at = -1;
+  for (let i = 0; i < n; i++) at = line.indexOf(ch, at + 1);
+  return at;
+};
 
 export interface EnemyInfo {
   id: EnemyId;
@@ -36,6 +48,41 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
     blurb: 'It hunts your cursor. Keep moving while you strike.',
     lines: ['stalk(target, path, shadow, corner, hallway, ceiling, floor);', 'if (seen) { hide(); } else { hunt(); }', 'return stalker;'],
     maxIntegrity: 4,
+  },
+  crawler: {
+    id: 'crawler',
+    title: 'CRAWLER',
+    blurb: 'Its weak points hide at the very start and end of lines. Use 0 and $ to run the edges.',
+    lines: ['fn crawl(start) {', 'let node = start.next;', 'while (node) { visit(node); }', '}'],
+    maxIntegrity: 4,
+  },
+  blinker: {
+    id: 'blinker',
+    title: 'BLINKER',
+    blurb: 'Its weak point blinks to a new word. The glowing outline shows where it lands next.',
+    lines: ['one two three four five six seven eight', 'nine ten eleven twelve thirteen fourteen', 'fifteen sixteen seventeen eighteen nineteen'],
+    maxIntegrity: 4,
+  },
+  sniper: {
+    id: 'sniper',
+    title: 'SNIPER',
+    blurb: 'Its weak points sit on rare letters deep in long lines. Hook onto them with f.',
+    lines: ['the quick brown fox jumps over the lazy dog while zebras vex quiet jackals', 'const handler = (event) => dispatch(event.target.value);'],
+    maxIntegrity: 4,
+  },
+  hopper: {
+    id: 'hopper',
+    title: 'HOPPER',
+    blurb: 'Its weak points repeat the same character. Hook the first one, then hop along with ;',
+    lines: ['one.two.three.four.five.six.seven.eight.nine.ten;', 'a,b,c,d,e,f,g,h,i,j,k,l,m;'],
+    maxIntegrity: 4,
+  },
+  seeker: {
+    id: 'seeker',
+    title: 'THE SEEKER',
+    blurb: 'Its weak point blinks to any letter. The outline shows where. Hook it before it moves again.',
+    lines: ['the quick brown fox jumps over the lazy dog while zebras vex quiet jackals', 'const handler = (event) => dispatch(event.target.value);', 'one.two.three.four.five.six.seven.eight.nine.ten;'],
+    maxIntegrity: 5,
   },
   warden: {
     id: 'warden',
@@ -150,6 +197,44 @@ export class Battle {
         this.hitsNeeded = 3;
         this.stalker = { row: 0, col: this.info.lines[0]!.length - 1 };
         break;
+      case 'crawler':
+        this.weak = [
+          { row: 0, col: this.info.lines[0]!.length - 1 },
+          { row: 1, col: 0 },
+          { row: 2, col: this.info.lines[2]!.length - 1 },
+          { row: 3, col: 0 },
+        ];
+        this.hitsNeeded = 4;
+        this.pulseEvery = 11;
+        break;
+      case 'blinker':
+        this.weak = [{ row: 0, col: 8 }];
+        this.hitsNeeded = 4;
+        this.pulseEvery = 14;
+        this.jumpTimer = this.jumpEvery();
+        this.nextTarget = this.pickBlink();
+        break;
+      case 'sniper': {
+        const [a, c] = this.info.lines as [string, string];
+        this.weak = [{ row: 0, col: a.indexOf('q') }, { row: 0, col: a.indexOf('z') }, { row: 1, col: c.indexOf('v') }];
+        this.hitsNeeded = 3;
+        this.pulseEvery = 12;
+        break;
+      }
+      case 'hopper': {
+        const [a, c] = this.info.lines as [string, string];
+        this.weak = [{ row: 0, col: nth(a, '.', 3) }, { row: 0, col: nth(a, '.', 6) }, { row: 1, col: nth(c, ',', 5) }, { row: 1, col: nth(c, ',', 9) }];
+        this.hitsNeeded = 4;
+        this.pulseEvery = 12;
+        break;
+      }
+      case 'seeker':
+        this.weak = [{ row: 0, col: 30 }];
+        this.hitsNeeded = 8;
+        this.pulseEvery = 11;
+        this.jumpTimer = this.jumpEvery();
+        this.nextTarget = this.pickBlink();
+        break;
       case 'warden': {
         const b = wordBoundaries(this.info.lines[0]!);
         this.lastBoundaryIdx = 4;
@@ -182,7 +267,13 @@ export class Battle {
 
   /** Ticks between weak point jumps: slower while you are still learning the pattern. */
   private jumpEvery(): number {
+    if (this.id === 'blinker') return 6;
+    if (this.id === 'seeker') return 5;
     return [6, 5, 4, 3][Math.min(this.phase, 4) - 1]!;
+  }
+
+  private blinks(): boolean {
+    return this.id === 'blinker' || this.id === 'seeker';
   }
 
   private weakAt(p: Pos): number {
@@ -208,6 +299,19 @@ export class Battle {
     return edge();
   }
 
+  /** Blinker: a random word start on a random row, never the current spot. */
+  private pickBlink(): Pos {
+    const cur = this.weak[0]!;
+    for (let i = 0; i < 50; i++) {
+      const row = this.rng.int(this.info.lines.length);
+      const line = this.info.lines[row]!;
+      const b = this.id === 'seeker' ? [...line].flatMap((ch, i) => (ch === ' ' ? [] : [i])) : wordBoundaries(line);
+      const p = { row, col: this.rng.pick(b) };
+      if (!same(p, cur)) return p;
+    }
+    return { row: 0, col: 0 };
+  }
+
   private respawnPatrol(): void {
     const line = this.info.lines[0]!;
     const atLeft = this.rng.next() < 0.5;
@@ -220,9 +324,10 @@ export class Battle {
     const out: Telegraph[] = [];
     if (this.status !== 'running') return out;
     if (this.pulseEvery && this.pulseTimer <= 3) out.push({ kind: 'pulse', text: `Pulse in ${this.pulseTimer}`, ticksLeft: this.pulseTimer, cells: [] });
-    if (this.id === 'warden' && this.nextTarget && this.jumpTimer <= 2) {
+    if ((this.id === 'warden' || this.blinks()) && this.nextTarget && this.jumpTimer <= 2) {
       const dir = this.nextTarget.col > this.weak[0]!.col ? 'right' : 'left';
-      out.push({ kind: 'jump', text: `Weak point jumps ${dir} in ${this.jumpTimer}`, ticksLeft: this.jumpTimer, cells: [this.nextTarget] });
+      const what = this.blinks() ? `Weak point blinks to row ${this.nextTarget.row + 1}, col ${this.nextTarget.col + 1}` : `Weak point jumps ${dir}`;
+      out.push({ kind: 'jump', text: `${what} in ${this.jumpTimer}`, ticksLeft: this.jumpTimer, cells: [this.nextTarget] });
     }
     if (this.sweep) {
       const len = this.info.lines[this.sweep.row]!.length;
@@ -245,25 +350,28 @@ export class Battle {
   feed(key: string): FeedResult {
     const events: BattleEvent[] = [];
     if (this.status !== 'running') return { accepted: false, events, effective: false };
-    if (!BATTLE_KEYS.has(key)) {
+    const awaiting = this.engine.state.pending.awaiting;
+    const allowed = BATTLE_KEYS.has(key) || (AREA2.has(this.id) && (FIND_KEYS.has(key) || awaiting));
+    if (!allowed) {
       events.push({ t: 'blocked', key });
       return { accepted: false, events, effective: false };
     }
 
     const before = this.cursor;
-    const onWeak = key === 'x' && this.weakAt(before) >= 0;
+    const onWeak = key === 'x' && !awaiting && this.weakAt(before) >= 0;
     this.engine.feed(key);
     let after = this.cursor;
     const changed = this.engine.state.lines.some((l, i) => l !== this.info.lines[i]);
     if (changed) {
-      // Any edit is undone; the arena text never drifts.
-      this.engine.reset({ lines: this.info.lines, cursor: after });
+      // Any edit is undone; the arena text never drifts. Undo (not reset) keeps the last f/t for ; and ,.
+      this.engine.feed('u');
+      if (this.engine.state.lines.some((l, i) => l !== this.info.lines[i])) this.engine.reset({ lines: this.info.lines, cursor: after });
       after = this.cursor;
     }
 
     let effective = !same(before, after);
     this.keysUsed.push(key);
-    if (key === 'x') {
+    if (key === 'x' && !awaiting) {
       if (onWeak) {
         this.registerHit(before, events);
         effective = true;
@@ -281,10 +389,17 @@ export class Battle {
     events.push({ t: 'hit', pos: p });
     this.hitsDone++;
     if (this.pulseEvery) this.pulseTimer = this.pulseEvery;
-    if (this.id === 'sentry' || this.id === 'stalker') {
+    if (['sentry', 'stalker', 'crawler', 'sniper', 'hopper'].includes(this.id)) {
       this.weak.splice(this.weakAt(p), 1);
     } else if (this.id === 'patrol') {
       this.respawnPatrol();
+    } else if (this.blinks()) {
+      const from = this.weak[0]!;
+      const to = this.nextTarget ?? from;
+      this.weak = [to];
+      events.push({ t: 'jump', from, to });
+      this.jumpTimer = this.jumpEvery();
+      this.nextTarget = this.pickBlink();
     } else if (this.id === 'warden') {
       const from = this.weak[0]!;
       const to = this.nextTarget ?? from;
@@ -365,7 +480,7 @@ export class Battle {
       }
     }
 
-    if (this.id === 'warden') {
+    if (this.id === 'warden' || this.blinks()) {
       this.jumpTimer--;
       if (this.jumpTimer <= 0) {
         const from = this.weak[0]!;
@@ -373,8 +488,11 @@ export class Battle {
         this.weak = [to];
         events.push({ t: 'jump', from, to });
         this.jumpTimer = this.jumpEvery();
-        this.nextTarget = this.pickNext();
+        this.nextTarget = this.blinks() ? this.pickBlink() : this.pickNext();
       }
+    }
+
+    if (this.id === 'warden') {
       if (this.phase >= 3) {
         if (this.sweep) {
           this.sweep.ticksLeft--;

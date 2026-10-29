@@ -78,7 +78,7 @@ export class MapNav {
     if (!e) return;
     this.entities.delete(id);
     this.setCell(e.pos, ' ');
-    if (e.kind === 'sentry' || e.kind === 'patrol' || e.kind === 'stalker') {
+    if (e.kind !== 'lesson' && e.kind !== 'warden' && e.kind !== 'seeker') {
       this.defeated++;
       if (this.defeated >= this.area.doorNeeds) this.openDoors();
     }

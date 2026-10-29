@@ -19,13 +19,13 @@ export class Sheet extends Phaser.Scene {
     text(this, 30, 20, 'CHARACTER', 30, C.accent, true);
     text(this, W - 30, 26, `Level ${mastery.characterLevel}   ${mastery.xp} XP`, 20, C.star, true).setOrigin(1, 0);
     text(this, 30, 62, 'Every command is a skill. Mastery only rises when you use it well.', 15, C.dim);
-    panel(this, 20, 96, W - 40, 440);
+    panel(this, 20, 96, W - 40, 560);
 
     text(this, 50, 112, 'skill', 13, C.dim);
     text(this, 330, 112, 'mastery', 13, C.dim);
     text(this, W - 50, 112, 'uses', 13, C.dim).setOrigin(1, 0);
     SKILLS.forEach((s, i) => {
-      const y = 136 + i * 36;
+      const y = 136 + i * 35;
       const uses = mastery.uses(s.key);
       const lvl = mastery.level(s.key);
       const col = lvl >= 3 ? C.accent : lvl >= 1 ? C.normal : C.dim;

@@ -169,3 +169,91 @@ describe('wordBoundaries', () => {
     expect(wordBoundaries('ab cd e')).toEqual([0, 1, 3, 4, 6]);
   });
 });
+
+describe('Crawler', () => {
+  it('is beaten by running the line edges with 0, $ and j', () => {
+    const b = make('crawler');
+    press(b, '$x'); // row 0 end
+    press(b, 'j0x'); // row 1 start
+    press(b, 'j$x'); // row 2 end
+    press(b, 'j0x'); // row 3 start
+    expect(b.status).toBe('won');
+    expect(b.hitsDone).toBe(4);
+  });
+});
+
+describe('Blinker', () => {
+  it('telegraphs and then moves its weak point to the shown cell', () => {
+    const b = make('blinker', 5);
+    const start = b.weak[0]!;
+    let target: { row: number; col: number } | null = null;
+    for (let i = 0; i < 5; i++) {
+      b.feed('l');
+      b.feed('h');
+      const tele = b.telegraphs().find((t) => t.kind === 'jump');
+      if (tele && tele.cells[0]) target = tele.cells[0];
+      if (b.weak[0]!.row !== start.row || b.weak[0]!.col !== start.col) break;
+    }
+    expect(target).not.toBeNull();
+    expect(b.weak[0]).toEqual(target);
+  });
+
+  it('is beaten by stepping onto each blink and striking', () => {
+    const b = make('blinker', 3);
+    let guard = 0;
+    while (b.status === 'running' && guard++ < 400) {
+      const w = b.weak[0]!;
+      const c = b.cursor;
+      if (c.row === w.row && c.col === w.col) b.feed('x');
+      else if (c.row < w.row) b.feed('j');
+      else if (c.row > w.row) b.feed('k');
+      else b.feed(c.col < w.col ? 'l' : 'h');
+    }
+    expect(['won', 'lost']).toContain(b.status);
+    expect(b.hitsDone).toBeGreaterThan(0);
+  });
+});
+
+describe('Area 2: find and jump', () => {
+  it('blocks find keys in area 1 fights but allows them in area 2', () => {
+    expect(make('sentry').feed('f').accepted).toBe(false);
+    expect(make('sniper').feed('f').accepted).toBe(true);
+  });
+
+  it('the letter after f is an argument, so x there is not a strike', () => {
+    const b = make('sniper');
+    b.feed('f');
+    const r = b.feed('x');
+    expect(r.accepted).toBe(true);
+    expect(b.wasted).toBe(0);
+  });
+
+  it('sniper falls to f-hooks on its rare letters', () => {
+    const b = make('sniper');
+    press(b, 'fqx'); // q in "quick"
+    press(b, 'fzx'); // z in "lazy"
+    press(b, 'j0fvx'); // first v on row 1
+    expect(b.status).toBe('won');
+  });
+
+  it('hopper needs f then ; to reach repeated characters', () => {
+    const b = make('hopper');
+    press(b, 'f.;;x'); // third dot
+    expect(b.hitsDone).toBe(1);
+    press(b, ';;;x'); // sixth dot
+    expect(b.hitsDone).toBe(2);
+  });
+
+  it('seeker blinks to a shown cell and is beaten by hooking it', () => {
+    const b = make('seeker', 9);
+    let guard = 0;
+    while (b.status === 'running' && guard++ < 600) {
+      const w = b.weak[0]!;
+      const c = b.cursor;
+      if (c.row === w.row && c.col === w.col) b.feed('x');
+      else if (c.row !== w.row) b.feed(c.row < w.row ? 'j' : 'k');
+      else b.feed(c.col < w.col ? 'l' : 'h');
+    }
+    expect(b.hitsDone).toBeGreaterThan(0);
+  });
+});

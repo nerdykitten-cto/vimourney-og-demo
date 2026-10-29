@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { log, mastery, resetProgress, setMuted, sfx } from '../session';
+import { isCleared, log, mastery, resetProgress, setMuted, sfx } from '../session';
 import { bindKeys, C, H, text, W } from '../ui';
 
 type Item = { label: () => string; run: () => void };
@@ -19,7 +19,7 @@ export class Title extends Phaser.Scene {
   create(): void {
     // Playtest shortcut: open the game with #warden, #sentry, #patrol, #stalker to jump to a battle.
     const jump = location.hash.slice(1);
-    if (['warden', 'sentry', 'patrol', 'stalker'].includes(jump)) {
+    if (['warden', 'sentry', 'patrol', 'stalker', 'crawler', 'blinker', 'sniper', 'hopper', 'seeker'].includes(jump)) {
       location.hash = '';
       this.scene.start('Battle', { enemy: jump, entityId: `${jump}-test` });
       return;
@@ -43,7 +43,8 @@ export class Title extends Phaser.Scene {
     this.add.sprite(W / 2 - 330, 150, 'actors', 0).setScale(5).play('idle-player');
     this.add.sprite(W / 2 + 330, 150, 'warden').setScale(3.5).play('idle-warden');
     this.items = [
-      { label: () => 'Adventure: Area 1, Movement', run: () => this.scene.start('World') },
+      { label: () => 'Adventure: Area 1, Movement', run: () => this.scene.start('World', { area: 'area-1' }) },
+      { label: () => `Adventure: Area 2, Find and Jump${isCleared('area-1') ? '' : '  (clear Area 1 first)'}`, run: () => this.openArea2() },
       { label: () => 'Arcade Room: Target Rush', run: () => this.scene.start('Arcade') },
       { label: () => 'Character sheet', run: () => this.scene.start('Sheet', { back: 'Title' }) },
       { label: () => `Sound: ${sfx.muted ? 'off' : 'on'}`, run: () => this.toggleSound() },
@@ -51,13 +52,13 @@ export class Title extends Phaser.Scene {
       { label: () => (this.confirmReset ? 'Really reset progress? press y' : 'Reset progress'), run: () => this.askReset() },
     ];
     this.items.forEach((it, i) => {
-      const t = text(this, W / 2 - 200, 300 + i * 52, it.label(), 28, C.fg);
+      const t = text(this, W / 2 - 200, 292 + i * 48, it.label(), 28, C.fg);
       t.setInteractive({ useHandCursor: true });
       t.on('pointerover', () => this.select(i));
       t.on('pointerdown', () => this.activate());
       this.labels.push(t);
     });
-    this.cursor = text(this, W / 2 - 240, 300, '▶', 28, C.normal, true);
+    this.cursor = text(this, W / 2 - 240, 292, '▶', 28, C.normal, true);
     this.note = text(this, W / 2, 650, '', 18, C.warn).setOrigin(0.5);
     text(this, W / 2, 684, 'j / k move   Enter choose   Tab character sheet in the world   Esc back', 14, C.dim).setOrigin(0.5);
     text(this, W / 2, 20, `Level ${mastery.characterLevel}   ${mastery.xp} XP`, 14, C.dim).setOrigin(0.5, 0);
@@ -83,6 +84,11 @@ export class Title extends Phaser.Scene {
     });
   }
 
+  private openArea2(): void {
+    if (isCleared('area-1') || location.hash === '#all') this.scene.start('World', { area: 'area-2' });
+    else this.note.setText('Clear Area 1 first (beat the Warden). Tip: open the page with #all to skip.');
+  }
+
   private select(i: number): void {
     this.index = i;
     this.refresh();
@@ -97,7 +103,7 @@ export class Title extends Phaser.Scene {
     this.items.forEach((it, i) => {
       this.labels[i]!.setText(it.label()).setColor(i === this.index ? '#ffffff' : '#94a3b8');
     });
-    this.cursor.setY(300 + this.index * 52);
+    this.cursor.setY(292 + this.index * 48);
   }
 
   private toggleSound(): void {

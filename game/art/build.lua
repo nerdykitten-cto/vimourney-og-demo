@@ -95,6 +95,27 @@ actor("lesson", {  -- a signpost
   "..oooooo", ".....oNN", ".....oNN", ".....oNN", ".....oNN", "....ooNN", "........", "........",
 })
 
+actor("sniper", {  -- a round head with a crosshair eye
+  "........", "...ooooo", "..obbbbb", ".obbbbbb", ".obwwwww", ".obwoooo", ".obwooor", ".obwoooo",
+  ".obwwwww", ".obbbbbb", "..oBBBBB", "..oBbbbb", "..oBBooo", "..ooo...", "........", "........",
+})
+actor("hopper", {  -- a frog: eyes on top, wide mouth
+  "........", "........", "..oooo..", ".owwwwo.", ".owowwo.", ".oAAAAAA", ".oAaaaaa", ".oAaaaaa",
+  ".oAAAAAA", ".oAooooo", ".oAaaaaa", ".oAAAAAA", "oaaoAAAA", "ooo.oo..", "........", "........",
+})
+
+-- the Seeker: a one-eyed horned head, 32x32
+make("seeker", 32, 32, 2, function(img, f)
+  local half = {
+    "................", "......oo........", ".....obbo.......", ".....obbbooooooo", "......obbbbbbbbb",
+    ".....obbbbbbbbbb", "....obbbbbbbbbbb", "...obbbbwwwwwwww", "...obbbwwwwwwwww", "...obbwwwwwwwwww",
+    "...obbwwwvvvvvvv", "...obbwwvvoooooo", "...obbwwvvoooooo", "...obbwwwvvvvvvv", "...obbwwwwwwwwww",
+    "...obbbbbbbbbbbb", "....obbBBBBBBBBB", "....obboooooooo", "....oBBbbbbbbbbb", ".....oBBBBBBBBBB",
+    ".....ooBBBBBBBBB", "......ooBBBBBBBB", ".......oooooooBB",
+  }
+  mirrored(img, half, 0, f == 2 and 1 or 0)
+end)
+
 -- the Warden: 32x32, two frames (crown flicker)
 make("warden", 32, 32, 2, function(img, f)
   local half = {

@@ -13,6 +13,9 @@ export const SKILLS: Array<{ key: string; name: string; blurb: string }> = [
   { key: '$', name: '$', blurb: 'Run to the line end' },
   { key: 'x', name: 'x', blurb: 'Strike a weak point' },
   { key: 'f', name: 'f', blurb: 'Hook onto a character' },
+  { key: 't', name: 't', blurb: 'Stop just short of a character' },
+  { key: ';', name: ';', blurb: 'Repeat the hook' },
+  { key: ',', name: ',', blurb: 'Repeat the hook backward' },
 ];
 
 /** Effective uses needed for mastery 1..5 (Seen, Trained, Fluent, Reflex, Master). */

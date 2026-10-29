@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { createVimEngine } from '@kbm/vim';
-import { Battle as Sim, type BattleEvent, type EnemyId, ENEMIES } from '../sim/battle';
+import { Battle as Sim, BATTLE_KEYS, BOSSES, FIND_KEYS, type BattleEvent, type EnemyId, ENEMIES } from '../sim/battle';
 import { createRng } from '../sim/rng';
 import { SKILLS } from '../sim/mastery';
 import { log, mastery, sfx } from '../session';
@@ -13,15 +13,17 @@ const ARENA_Y = 250;
 const LINE_H = 44;
 const BOTTOM_Y = 590;
 
+const AREA2_ENEMIES = new Set<EnemyId>(['sniper', 'hopper', 'seeker']);
 const ACTOR_INDEX: Record<string, number> = Object.fromEntries(ACTORS.map((a, i) => [a, i]));
-const ENEMY_COLOR: Record<EnemyId, number> = { sentry: C.warn, patrol: C.star, stalker: C.bad, warden: C.visual };
-const XP: Record<EnemyId, number> = { sentry: 20, patrol: 20, stalker: 25, warden: 80 };
+const ENEMY_COLOR: Record<EnemyId, number> = { sentry: C.warn, patrol: C.star, stalker: C.bad, crawler: C.accent, blinker: 0x8b5cf6, sniper: C.normal, hopper: C.accent, seeker: C.normal, warden: C.visual };
+const XP: Record<EnemyId, number> = { sentry: 20, patrol: 20, stalker: 25, crawler: 25, blinker: 30, sniper: 35, hopper: 35, seeker: 110, warden: 80 };
 
 /** The Buffer: a separate battle scene built for typing. */
 export class Battle extends Phaser.Scene {
   private sim!: Sim;
   private enemy: EnemyId = 'sentry';
   private entityId = '';
+  private areaId = 'area-1';
   private cw = 11;
   private g!: Phaser.GameObjects.Graphics;
   private lineTexts: Phaser.GameObjects.Text[] = [];
@@ -48,7 +50,8 @@ export class Battle extends Phaser.Scene {
     super('Battle');
   }
 
-  init(data: { enemy: EnemyId; entityId: string; seed?: number }): void {
+  init(data: { enemy: EnemyId; entityId: string; seed?: number; area?: string }): void {
+    this.areaId = data.area ?? 'area-1';
     this.enemy = data.enemy;
     this.entityId = data.entityId;
     this.seed = data.seed ?? Math.floor(Math.random() * 1e6);
@@ -73,7 +76,7 @@ export class Battle extends Phaser.Scene {
     // Header
     panel(this, 16, 14, W - 32, 170, color);
     const glyph = this.add.rectangle(0, 0, 120, 120, color, 0.16).setStrokeStyle(2, color, 0.9);
-    const art = this.enemy === 'warden' ? this.add.sprite(0, 0, 'warden').setScale(3.4).play('idle-warden') : this.add.sprite(0, 0, 'actors', (ACTOR_INDEX[this.enemy] ?? 1) * 2).setScale(6.5).play(`idle-${this.enemy}`);
+    const art = BOSSES.has(this.enemy) ? this.add.sprite(0, 0, this.enemy).setScale(3.4).play(`idle-${this.enemy}`) : this.add.sprite(0, 0, 'actors', (ACTOR_INDEX[this.enemy] ?? 1) * 2).setScale(6.5).play(`idle-${this.enemy}`);
     this.portrait = this.add.container(92, 99, [glyph, art]);
     this.tweens.add({ targets: this.portrait, x: '+=3', y: '-=2', duration: 90, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     text(this, 180, 30, info.title, 36, color, true);
@@ -104,7 +107,7 @@ export class Battle extends Phaser.Scene {
     panel(this, 16, by, W - 32, H - by - 14);
     text(this, 36, by + 12, 'keys', 13, C.dim);
     text(this, 36, by + 66, 'moves', 13, C.dim);
-    SKILLS.filter((s) => s.key !== 'f').forEach((s, i) => {
+    SKILLS.filter((s) => BATTLE_KEYS.has(s.key) || (AREA2_ENEMIES.has(this.enemy) && FIND_KEYS.has(s.key))).forEach((s, i) => {
       const lvl = mastery.level(s.key);
       keycap(this, 36 + i * 44, by + 88, s.name, lvl >= 3 ? C.accent : lvl >= 1 ? C.normal : C.dim);
     });
@@ -116,7 +119,7 @@ export class Battle extends Phaser.Scene {
     sweepOut(this);
     this.cameras.main.fadeIn(1, 0, 0, 0);
     log.add('battle', { enemy: this.enemy });
-    if (this.enemy === 'warden') this.banner('THE WARDEN', C.visual, 'Phase 1');
+    if (BOSSES.has(this.enemy)) this.banner(ENEMIES[this.enemy].title, ENEMY_COLOR[this.enemy], this.enemy === 'warden' ? 'Phase 1' : 'Its weak point blinks. Read the outline.');
     this.renderAll();
   }
 
@@ -363,12 +366,12 @@ export class Battle extends Phaser.Scene {
   private overlayKey(key: string): void {
     if (key === 'Enter') {
       if (this.won) this.leave('won');
-      else this.scene.restart({ enemy: this.enemy, entityId: this.entityId, seed: this.seed + 1 });
+      else this.scene.restart({ enemy: this.enemy, entityId: this.entityId, seed: this.seed + 1, area: this.areaId });
     } else if (key === 'Escape') this.leave(this.won ? 'won' : 'retreat');
   }
 
   private leave(result: 'won' | 'retreat'): void {
     this.cameras.main.fadeOut(180, 0, 0, 0);
-    this.time.delayedCall(190, () => this.scene.start('World', { result, enemy: this.enemy, entityId: this.entityId }));
+    this.time.delayedCall(190, () => this.scene.start('World', { result, enemy: this.enemy, entityId: this.entityId, area: this.areaId }));
   }
 }

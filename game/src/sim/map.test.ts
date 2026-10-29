@@ -104,3 +104,25 @@ describe('MapNav', () => {
     void n;
   });
 });
+
+describe('Area 2 map', () => {
+  it('every entity is reachable on foot, and the boss once the door opens', async () => {
+    const { area2 } = await import('./area2');
+    const rows = area2.lines;
+    const seen = new Set<string>();
+    const queue = [[area2.start.row, area2.start.col]] as Array<[number, number]>;
+    while (queue.length) {
+      const [r, c] = queue.pop()!;
+      const key = `${r},${c}`;
+      if (seen.has(key) || rows[r]?.[c] === undefined || rows[r]![c] === '#') continue;
+      seen.add(key);
+      if (rows[r]![c] === 'D') {
+        // treat the door as open for the boss check
+      }
+      for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) queue.push([r + dr!, c + dc!]);
+    }
+    rows.forEach((line, r) => [...line].forEach((ch, c) => {
+      if ('LNHTK'.includes(ch)) expect(seen.has(`${r},${c}`), `${ch} at ${r},${c}`).toBe(true);
+    }));
+  });
+});

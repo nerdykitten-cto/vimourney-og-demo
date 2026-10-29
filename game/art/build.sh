@@ -8,6 +8,7 @@ mkdir -p src "$OUT"
 "$ASE" -b --script-param out=src --script build.lua
 cd src
 sheet() { local out=$1; shift; "$ASE" -b "$@" --sheet "$OUT/$out.png" --sheet-type horizontal; }
-sheet actors player.aseprite sentry.aseprite patrol.aseprite stalker.aseprite crawler.aseprite blinker.aseprite lesson.aseprite
+sheet actors player.aseprite sentry.aseprite patrol.aseprite stalker.aseprite crawler.aseprite blinker.aseprite lesson.aseprite sniper.aseprite hopper.aseprite
 sheet tiles floor0.aseprite floor1.aseprite floor2.aseprite wall.aseprite doorClosed.aseprite doorOpen.aseprite
 sheet warden warden.aseprite
+sheet seeker seeker.aseprite
