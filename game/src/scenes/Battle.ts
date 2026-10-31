@@ -3,15 +3,15 @@ import { createVimEngine } from '@kbm/vim';
 import { Battle as Sim, BATTLE_KEYS, BOSSES, FIND_KEYS, type BattleEvent, type EnemyId, ENEMIES } from '../sim/battle';
 import { createRng } from '../sim/rng';
 import { SKILLS } from '../sim/mastery';
-import { log, mastery, sfx } from '../session';
+import { log, mastery, sfx, store } from '../session';
 import { ACTORS } from './Boot';
-import { bindKeys, burst, C, charWidth, H, keycap, keyLabel, panel, sweepOut, text, W } from '../ui';
+import { bindKeys, burst, C, charWidth, H, heading, hex, keycap, keyLabel, panel, stage, sweepOut, text, W } from '../ui';
 
 const FONT_SIZE = 24;
 const ARENA_X = 100;
-const ARENA_Y = 250;
+const ARENA_TOP = 200;
 const LINE_H = 44;
-const BOTTOM_Y = 590;
+const BOTTOM_Y = 572;
 
 const AREA2_ENEMIES = new Set<EnemyId>(['sniper', 'hopper', 'seeker']);
 const ACTOR_INDEX: Record<string, number> = Object.fromEntries(ACTORS.map((a, i) => [a, i]));
@@ -23,6 +23,8 @@ export class Battle extends Phaser.Scene {
   private sim!: Sim;
   private enemy: EnemyId = 'sentry';
   private entityId = '';
+  private arenaY = 250;
+  private intro: Phaser.GameObjects.GameObject[] | null = null;
   private areaId = 'area-1';
   private cw = 11;
   private g!: Phaser.GameObjects.Graphics;
@@ -72,14 +74,14 @@ export class Battle extends Phaser.Scene {
     const info = ENEMIES[this.enemy];
     const color = ENEMY_COLOR[this.enemy];
 
-    this.add.rectangle(W / 2, H / 2, W, H, C.bg);
+    stage(this);
     // Header
     panel(this, 16, 14, W - 32, 170, color);
     const glyph = this.add.rectangle(0, 0, 120, 120, color, 0.16).setStrokeStyle(2, color, 0.9);
     const art = BOSSES.has(this.enemy) ? this.add.sprite(0, 0, this.enemy).setScale(3.4).play(`idle-${this.enemy}`) : this.add.sprite(0, 0, 'actors', (ACTOR_INDEX[this.enemy] ?? 1) * 2).setScale(6.5).play(`idle-${this.enemy}`);
     this.portrait = this.add.container(92, 99, [glyph, art]);
-    this.tweens.add({ targets: this.portrait, x: '+=3', y: '-=2', duration: 90, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    text(this, 180, 30, info.title, 36, color, true);
+    this.tweens.add({ targets: art, y: -3, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    heading(this, 180, 26, info.title, 40, color);
     text(this, 180, 82, info.blurb, 17, C.dim).setWordWrapWidth(560);
     this.teleText = text(this, 180, 132, '', 22, C.warn, true);
 
@@ -89,14 +91,13 @@ export class Battle extends Phaser.Scene {
     this.tickText = text(this, W - 340, 138, '', 15, C.dim);
 
     // Arena
-    const widest = Math.max(...info.lines.map((l) => l.length));
-    const aw = widest * this.cw + 60;
-    panel(this, 16, ARENA_Y - 34, W - 32, LINE_H * info.lines.length + 76, C.line, 0x0d131a);
-    void aw;
+    const arenaH = BOTTOM_Y - ARENA_TOP - 12;
+    panel(this, 16, ARENA_TOP, W - 32, arenaH, C.line, 0x0d131a);
+    this.arenaY = ARENA_TOP + Math.round((arenaH - 44 - LINE_H * info.lines.length) / 2);
     this.g = this.add.graphics().setDepth(1);
     info.lines.forEach((line, r) => {
-      text(this, ARENA_X - 48, ARENA_Y + r * LINE_H + 6, String(r + 1), 16, C.dim).setDepth(2);
-      this.lineTexts.push(text(this, ARENA_X, ARENA_Y + r * LINE_H, line, FONT_SIZE, C.fg).setDepth(2));
+      text(this, ARENA_X - 48, this.arenaY + r * LINE_H + 6, String(r + 1), 16, C.dim).setDepth(2);
+      this.lineTexts.push(text(this, ARENA_X, this.arenaY + r * LINE_H, line, FONT_SIZE, C.fg).setDepth(2));
     });
     this.curText = text(this, 0, 0, '', FONT_SIZE, 0x0a0e13, true).setDepth(4);
     this.stalkText = text(this, 0, 0, 'S', FONT_SIZE, 0x0a0e13, true).setDepth(4).setVisible(false);
@@ -112,25 +113,80 @@ export class Battle extends Phaser.Scene {
       keycap(this, 36 + i * 44, by + 88, s.name, lvl >= 3 ? C.accent : lvl >= 1 ? C.normal : C.dim);
     });
     this.modeText = text(this, W - 36, by + 12, 'NORMAL', 14, C.normal, true).setOrigin(1, 0);
-    this.toast = text(this, W / 2, by - 30, '', 20, C.warn).setOrigin(0.5);
+    text(this, 36, by - 44, 'Pink letters are weak points: stand on one and press x. Time only moves when you press a key.', 15, C.dim);
+    this.toast = text(this, W / 2, by - 76, '', 22, C.warn, true).setOrigin(0.5);
     text(this, W - 36, by + 98, 'Esc: retreat', 14, C.dim).setOrigin(1, 0);
 
     bindKeys(this, (k) => this.onKey(k));
     sweepOut(this);
-    this.cameras.main.fadeIn(1, 0, 0, 0);
     log.add('battle', { enemy: this.enemy });
-    if (BOSSES.has(this.enemy)) this.banner(ENEMIES[this.enemy].title, ENEMY_COLOR[this.enemy], this.enemy === 'warden' ? 'Phase 1' : 'Its weak point blinks. Read the outline.');
     this.renderAll();
+    if (!store.get<boolean>(`seen-${this.enemy}`, false)) this.openIntro();
+    else this.begin();
   }
 
   // ---------------------------------------------------------------- input
 
+  private begin(): void {
+    if (BOSSES.has(this.enemy)) this.banner(ENEMIES[this.enemy].title, ENEMY_COLOR[this.enemy], this.enemy === 'warden' ? 'Phase 1' : 'Its weak point blinks. Read the outline.');
+  }
+
+  /** The card before a first meeting: what this enemy wants and which keys answer it. */
+  private openIntro(): void {
+    const info = ENEMIES[this.enemy];
+    const color = ENEMY_COLOR[this.enemy];
+    const first = !store.get<boolean>('fought', false);
+    const h = first ? 440 : 340;
+    const top = (H - h) / 2;
+    const x = 260;
+    const objs: Phaser.GameObjects.GameObject[] = [this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.72).setDepth(60), panel(this, x, top, W - 2 * x, h, color).setDepth(61)];
+    const add = <T extends Phaser.GameObjects.GameObject>(o: T): T => {
+      objs.push(o);
+      return o;
+    };
+    add(heading(this, W / 2, top + 28, info.title, 44, color).setOrigin(0.5, 0).setDepth(62));
+    add(text(this, x + 40, top + 96, info.tip, 19, C.fg).setWordWrapWidth(W - 2 * x - 80).setDepth(62));
+    add(text(this, x + 40, top + 176, 'Best moves', 14, C.dim).setDepth(62));
+    let cx = x + 40;
+    for (const k of info.moves) {
+      const cap = add(keycap(this, cx, top + 200, keyLabel(k), C.normal).setDepth(62));
+      cx += cap.width + 8;
+    }
+    if (first) {
+      add(text(this, x + 40, top + 252, 'How fights work', 14, C.dim).setDepth(62));
+      add(text(this, x + 40, top + 276, 'The blue block is your cursor. Pink letters are weak points.\nStand on one and press x. Time only moves when you press a key.', 18, C.fg).setDepth(62).setLineSpacing(6));
+    }
+    add(text(this, W / 2, top + h - 52, 'Enter: fight    Esc: back away', 19, C.warn, true).setOrigin(0.5, 0).setDepth(62));
+    this.intro = objs;
+  }
+
+  private closeIntro(): void {
+    this.intro?.forEach((o) => o.destroy());
+    this.intro = null;
+    store.set(`seen-${this.enemy}`, true);
+    store.set('fought', true);
+    this.startedAt = Date.now();
+    this.begin();
+  }
+
   private onKey(key: string): void {
+    if (this.intro) {
+      if (key === 'Enter') {
+        sfx.menu();
+        this.closeIntro();
+      } else if (key === 'Escape') this.leave('retreat');
+      return;
+    }
     if (this.overlay) {
       this.overlayKey(key);
       return;
     }
-    if (key === 'Escape') {
+    if (key.startsWith('Arrow')) {
+      this.say('Arrow keys are off in the Buffer: use h j k l', C.warn);
+      sfx.blocked();
+      return;
+    }
+    if (key === 'Escape' && !this.sim.awaitingChar) {
       log.add('retreat', { enemy: this.enemy, ...this.stats() });
       this.leave('retreat');
       return;
@@ -216,8 +272,8 @@ export class Battle extends Phaser.Scene {
   }
 
   private banner(title: string, color: number, sub: string): void {
-    const t = text(this, W / 2, 380, title, 64, color, true).setOrigin(0.5).setDepth(30).setAlpha(0);
-    const s = text(this, W / 2, 440, sub, 22, C.fg).setOrigin(0.5).setDepth(30).setAlpha(0);
+    const t = heading(this, W / 2, 360, title, 72, color).setOrigin(0.5).setDepth(30).setAlpha(0);
+    const s = text(this, W / 2, 424, sub, 22, C.fg).setOrigin(0.5).setDepth(30).setAlpha(0);
     this.tweens.add({ targets: [t, s], alpha: 1, duration: 200, yoyo: true, hold: 900, onComplete: () => { t.destroy(); s.destroy(); } });
     sfx.warn();
   }
@@ -225,7 +281,7 @@ export class Battle extends Phaser.Scene {
   // ---------------------------------------------------------------- drawing
 
   private cellPx(row: number, col: number): { x: number; y: number } {
-    return { x: ARENA_X + col * this.cw, y: ARENA_Y + row * LINE_H };
+    return { x: ARENA_X + col * this.cw, y: this.arenaY + row * LINE_H };
   }
 
   private spawnTrail(a: { row: number; col: number }, b: { row: number; col: number }): void {
@@ -249,9 +305,9 @@ export class Battle extends Phaser.Scene {
     const tele = s.telegraphs();
     const main = tele.find((t) => t.kind === 'sweep') ?? tele.find((t) => t.kind === 'jump' && t.cells.length > 0) ?? tele.find((t) => t.kind === 'pulse') ?? tele[0];
     this.teleText.setText(main ? `>> ${main.text}` : '').setColor(main?.kind === 'sweep' || main?.kind === 'pulse' ? '#ff5c57' : '#ffb86c');
-    this.modeText.setText(s.mode === 'normal' ? 'NORMAL' : s.mode.toUpperCase());
+    this.modeText.setText(s.awaitingChar ? 'HOOK: PRESS A LETTER' : 'NORMAL').setColor(hex(s.awaitingChar ? C.warn : C.normal));
     this.strip.forEach((k) => k.destroy());
-    this.strip = s.keysUsed.slice(-18).map((k, i) => keycap(this, 36 + i * 40, BOTTOM_Y + 26, keyLabel(k), C.normal));
+    this.strip = s.keysUsed.slice(-24).map((k, i) => keycap(this, 36 + i * 38, BOTTOM_Y + 30, keyLabel(k), C.normal));
   }
 
   update(time: number): void {
@@ -276,7 +332,7 @@ export class Battle extends Phaser.Scene {
       }
     }
 
-    // Blank the characters under weak points so the '@' marker is drawn on a clean cell.
+    // Weak points redraw their own letter on top, so the plain text underneath is blanked.
     s.lines.forEach((line, r) => {
       const cells = [...line];
       for (const w of s.weak) if (w.row === r && w.col < cells.length) cells[w.col] = ' ';
@@ -293,10 +349,10 @@ export class Battle extends Phaser.Scene {
       g.lineStyle(2, C.visual, 0.9).strokeRoundedRect(p.x - 2, p.y, this.cw + 4, LINE_H - 8, 4);
       let t = this.weakTexts[i];
       if (!t) {
-        t = text(this, 0, 0, '@', FONT_SIZE, C.visual, true).setDepth(3);
+        t = text(this, 0, 0, '', FONT_SIZE, C.visual, true).setDepth(3);
         this.weakTexts[i] = t;
       }
-      t.setVisible(true).setPosition(p.x, p.y);
+      t.setVisible(true).setPosition(p.x, p.y).setText(s.lines[w.row]![w.col] ?? '');
     });
 
     // stalker
@@ -344,17 +400,19 @@ export class Battle extends Phaser.Scene {
     const objs: Phaser.GameObjects.GameObject[] = [];
     objs.push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.78).setDepth(60));
     objs.push(panel(this, 300, 150, W - 600, 400, won ? C.accent : C.bad).setDepth(61));
-    objs.push(text(this, W / 2, 200, won ? `${ENEMIES[this.enemy].title} PURGED` : 'INTEGRITY DEPLETED', 36, won ? C.accent : C.bad, true).setOrigin(0.5).setDepth(62));
+    objs.push(heading(this, W / 2, 200, won ? `${ENEMIES[this.enemy].title} PURGED` : 'INTEGRITY DEPLETED', 44, won ? C.accent : C.bad).setOrigin(0.5).setDepth(62));
+    if (won && s.wasted === 0 && s.integrity === s.info.maxIntegrity) objs.push(text(this, W / 2, 240, 'FLAWLESS', 20, C.star, true).setOrigin(0.5).setDepth(62));
     const rows = [
       ['keys pressed', String(s.keysUsed.length)],
       ['wasted strikes', String(s.wasted)],
       ['time', `${seconds}s`],
       ...(this.enemy === 'warden' ? [['sweeps dodged', String(this.dodged)]] : []),
+      ['integrity left', `${s.integrity}/${s.info.maxIntegrity}`],
       ...(won ? [['XP earned', `+${xp}`]] : []),
     ];
     rows.forEach(([k, v], i) => {
-      objs.push(text(this, 360, 275 + i * 40, k!, 22, C.dim).setDepth(62));
-      objs.push(text(this, W - 360, 275 + i * 40, v!, 22, C.fg, true).setOrigin(1, 0).setDepth(62));
+      objs.push(text(this, 360, 282 + i * 38, k!, 22, C.dim).setDepth(62));
+      objs.push(text(this, W - 360, 282 + i * 38, v!, 22, C.fg, true).setOrigin(1, 0).setDepth(62));
     });
     objs.push(text(this, W / 2, 495, won ? 'Enter: back to the map' : 'Enter: retry    Esc: retreat', 17, C.warn).setOrigin(0.5).setDepth(62));
     this.overlay = objs;

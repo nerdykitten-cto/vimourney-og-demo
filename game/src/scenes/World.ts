@@ -3,14 +3,21 @@ import type { Pos } from '@kbm/shared';
 import { BOSSES, ENEMIES, type EnemyId } from '../sim/battle';
 import type { Entity } from '../sim/map';
 import { SKILLS } from '../sim/mastery';
-import { getNav, isCleared, log, markCleared, markDefeated, mastery, sfx } from '../session';
-import { bindKeys, burst, C, H, keycap, keyLabel, panel, sweepIn, sweepOut, text, W } from '../ui';
+import { getNav, isCleared, log, markCleared, markDefeated, mastery, sfx, store } from '../session';
+import { bindKeys, burst, C, H, heading, hex, keycap, keyLabel, panel, stage, sweepIn, sweepOut, text, W } from '../ui';
 
 const TILE = 32;
 const MY = 104;
 const ACTOR_FRAME: Record<string, number> = { sentry: 1, patrol: 2, stalker: 3, crawler: 4, blinker: 5, lesson: 6, sniper: 7, hopper: 8 };
 
 const COLORS: Record<string, number> = { sentry: C.warn, patrol: C.star, stalker: C.bad, crawler: C.accent, blinker: 0x8b5cf6, sniper: C.normal, hopper: C.accent, seeker: C.normal, warden: C.visual, lesson: C.accent };
+
+/** First steps in Area 1, one key at a time. The last hop lands on the Sentry. */
+const COACH: Array<{ key: string; text: string }> = [
+  { key: 'l', text: 'Press l to step right' },
+  { key: 'k', text: 'Press k to step up' },
+  { key: 'w', text: 'Press w to hop along the row into the Sentry' },
+];
 
 export class World extends Phaser.Scene {
   private areaId = 'area-1';
@@ -19,6 +26,7 @@ export class World extends Phaser.Scene {
   private player!: Phaser.GameObjects.Container;
   private doorGfx: Phaser.GameObjects.Image | null = null;
   private msg!: Phaser.GameObjects.Text;
+  private goal!: Phaser.GameObjects.Text;
   private pendingText!: Phaser.GameObjects.Text;
   private winsText!: Phaser.GameObjects.Text;
   private strip: Phaser.GameObjects.Container[] = [];
@@ -26,6 +34,7 @@ export class World extends Phaser.Scene {
   private cmd: string[] = [];
   private busy = false;
   private overlay: Phaser.GameObjects.GameObject[] | null = null;
+  private overlayEnter: (() => void) | null = null;
   private resultData: { result?: string; enemy?: EnemyId; entityId?: string; area?: string } = {};
 
   constructor() {
@@ -46,13 +55,14 @@ export class World extends Phaser.Scene {
     this.busy = false;
     this.overlay = null;
     this.doorGfx = null;
-    this.add.rectangle(W / 2, H / 2, W, H, C.bg);
+    stage(this);
 
-    text(this, 24, 16, this.nav.area.title, 24, C.accent, true);
-    this.winsText = text(this, W - 24, 20, '', 16, C.dim).setOrigin(1, 0);
-    text(this, 24, 52, 'Walk the map with real Vim motions. Bump into an enemy to fight it.', 15, C.dim);
-    text(this, 24, 76, 'Tab: character sheet    Esc: menu', 14, C.dim);
+    heading(this, 24, 12, this.nav.area.title, 36, C.accent);
+    this.winsText = text(this, W - 24, 20, '', 18, C.fg).setOrigin(1, 0);
+    text(this, 24, 66, 'Walk the map with real Vim motions. Walk into an enemy to fight it.', 16, C.dim);
+    text(this, W - 24, 66, 'Tab: character sheet    Esc: menu', 16, C.dim).setOrigin(1, 0);
 
+    this.overlayEnter = null;
     this.drawMap();
     this.drawPanel();
 
@@ -65,8 +75,11 @@ export class World extends Phaser.Scene {
     this.refreshHud();
 
     if (this.resultData.result === 'won' && this.resultData.entityId) this.afterWin(this.resultData.entityId, this.resultData.enemy!);
-    else if (!this.nav.isDoorOpen) this.say(`Beat ${this.nav.area.doorNeeds} enemies to open the door.`, C.dim);
-    else this.say(`The door is open. ${ENEMIES[this.nav.area.boss as EnemyId].title} waits.`, C.visual);
+    this.refreshGoal();
+    if (this.areaId === 'area-2' && !store.get<boolean>('seen-area-2', false)) {
+      store.set('seen-area-2', true);
+      this.openLesson();
+    }
     this.resultData = {};
   }
 
@@ -84,7 +97,8 @@ export class World extends Phaser.Scene {
         const wall = ch === '#';
         const h = (r * 31 + c * 17 + r * c) % 11;
         const frame = wall ? 3 : h === 0 ? 2 : h <= 2 ? 1 : 0;
-        this.add.image(c * TILE, MY + r * TILE, 'tiles', frame).setOrigin(0).setScale(TILE / 16);
+        const img = this.add.image(c * TILE, MY + r * TILE, 'tiles', frame).setOrigin(0).setScale(TILE / 16);
+        if (wall && this.areaId === 'area-2') img.setTint(0xd8b4ff);
       });
     });
     this.add.graphics().lineStyle(2, C.line, 1).strokeRect(0, MY, W, rows * TILE);
@@ -128,8 +142,9 @@ export class World extends Phaser.Scene {
   private drawPanel(): void {
     const y = MY + this.nav.lines.length * TILE + 14;
     panel(this, 16, y, W - 32, H - y - 16);
-    this.pendingText = text(this, 36, y + 14, '', 22, C.warn, true);
-    this.msg = text(this, 36, y + 52, '', 18, C.fg);
+    this.goal = text(this, 36, y + 14, '', 22, C.accent, true);
+    this.pendingText = text(this, W - 36, y + 14, '', 22, C.warn, true).setOrigin(1, 0);
+    this.msg = text(this, 36, y + 54, '', 18, C.fg);
     text(this, 36, y + 100, 'Your moves', 13, C.dim);
     SKILLS.forEach((s, i) => {
       const lvl = mastery.level(s.key);
@@ -149,7 +164,30 @@ export class World extends Phaser.Scene {
   }
 
   private say(s: string, color: number = C.fg): void {
-    this.msg.setText(s).setColor(`#${color.toString(16).padStart(6, '0')}`);
+    this.msg.setText(s).setColor(hex(color));
+  }
+
+  /** The line at the top of the panel: the next thing to do. */
+  private refreshGoal(): void {
+    const step = store.get<number>('coach', 0);
+    const area = this.nav.area;
+    let goal = '';
+    if (this.areaId === 'area-1' && step < COACH.length) goal = COACH[step]!.text;
+    else if (isCleared(area.id)) goal = 'Area cleared. Esc: back to the menu';
+    else if (this.nav.isDoorOpen) goal = `The door is open. Find ${ENEMIES[area.boss as EnemyId].title} behind it`;
+    else {
+      const left = area.doorNeeds - this.nav.defeatedCount;
+      goal = `Beat ${left} more ${left === 1 ? 'enemy' : 'enemies'} to open the red door. The sign has a field guide`;
+    }
+    this.goal.setText(goal);
+  }
+
+  private coachKey(key: string): void {
+    const step = store.get<number>('coach', 0);
+    if (this.areaId === 'area-1' && COACH[step]?.key === key) {
+      store.set('coach', step + 1);
+      this.refreshGoal();
+    }
   }
 
   // ---------------------------------------------------------------- input
@@ -157,7 +195,18 @@ export class World extends Phaser.Scene {
   private onKey(key: string): void {
     if (this.busy) return;
     if (this.overlay) {
-      if (key === 'Enter' || key === 'Escape') this.closeOverlay();
+      if (key === 'Enter' || key === 'Escape') {
+        const next = key === 'Enter' ? this.overlayEnter : null;
+        const leave = key === 'Escape' && this.overlayEnter !== null;
+        this.closeOverlay();
+        next?.();
+        if (leave) this.scene.start('Title');
+      }
+      return;
+    }
+    if (key.startsWith('Arrow')) {
+      sfx.blocked();
+      this.say('Arrow keys are off here: use h j k l', C.warn);
       return;
     }
     if (this.cmd.length === 0) {
@@ -184,11 +233,12 @@ export class World extends Phaser.Scene {
     if (r.kind === 'blocked') {
       sfx.blocked();
       this.tweens.add({ targets: this.player, x: this.player.x + 4, duration: 40, yoyo: true, repeat: 2 });
-      this.say(key === 'Escape' ? '' : 'Something is in the way, or that is not a move here.', C.bad);
+      this.say(this.blockedReason(head), C.bad);
       this.refreshHud();
       return;
     }
     mastery.record(head, true);
+    this.coachKey(head);
     this.refreshHud();
     const dest = this.center(r.to);
     const dist = Math.abs(r.to.col - r.from.col) + Math.abs(r.to.row - r.from.row);
@@ -210,6 +260,14 @@ export class World extends Phaser.Scene {
         } else this.say('', C.fg);
       },
     });
+  }
+
+  private blockedReason(key: string): string {
+    if (key === 'Escape') return '';
+    if ('hjkl'.includes(key)) return 'A wall is in the way.';
+    if ('wbe'.includes(key)) return 'Nothing to hop to that way on this row. Try another row.';
+    if ('0$'.includes(key)) return 'You are already at that edge.';
+    return 'That is not a move on the map. Your moves are listed below.';
   }
 
   private trail(path: Pos[]): void {
@@ -250,13 +308,15 @@ export class World extends Phaser.Scene {
     this.nav.defeat(entityId);
     markDefeated(this.areaId, entityId);
     this.refreshHud();
+    this.refreshGoal();
     if (BOSSES.has(enemy)) {
       markCleared(this.areaId);
+      this.refreshGoal();
       this.time.delayedCall(500, () => this.openCleared());
       return;
     }
     if (!doorWas && this.nav.isDoorOpen) {
-      this.say('The door grinds open. The boss waits behind it.', C.visual);
+      this.say('The door grinds open.', C.visual);
       this.cameras.main.shake(400, 0.006);
       sfx.win();
       if (this.doorGfx) this.tweens.add({ targets: this.doorGfx, alpha: 0, duration: 500, onComplete: () => this.doorGfx?.destroy() });
@@ -271,7 +331,7 @@ export class World extends Phaser.Scene {
     const objs: Phaser.GameObjects.GameObject[] = [];
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setDepth(60);
     objs.push(dim, panel(this, 120, 110, W - 240, 380, C.accent).setDepth(61));
-    objs.push(text(this, 150, 130, `FIELD GUIDE: ${this.nav.area.title.split(': ')[1]!.toUpperCase()}`, 26, C.accent, true).setDepth(62));
+    objs.push(heading(this, 150, 124, `FIELD GUIDE: ${this.nav.area.title.split(': ')[1]!.toUpperCase()}`, 34, C.accent).setDepth(62));
     objs.push(text(this, 150, 172, 'The map is text, so the same keys that edit text move you.', 16, C.dim).setDepth(62));
     this.nav.area.lesson.forEach(([k, d], i) => {
       objs.push(text(this, 150, 220 + i * 40, k, 20, C.normal, true).setDepth(62));
@@ -285,18 +345,21 @@ export class World extends Phaser.Scene {
   private closeOverlay(): void {
     this.overlay?.forEach((o) => o.destroy());
     this.overlay = null;
+    this.overlayEnter = null;
   }
 
   private openCleared(): void {
+    const area = this.nav.area;
     const objs: Phaser.GameObjects.GameObject[] = [];
-    objs.push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.75).setDepth(60), panel(this, 180, 150, W - 360, 300, C.accent).setDepth(61));
-    objs.push(text(this, W / 2, 190, `${this.nav.area.title.split(':')[0]!.toUpperCase()} CLEARED`, 40, C.accent, true).setOrigin(0.5).setDepth(62));
-    objs.push(text(this, W / 2, 250, `Level ${mastery.characterLevel}   ${mastery.xp} XP`, 22, C.star).setOrigin(0.5).setDepth(62));
-    this.nav.area.clearedText.forEach((line, i) => objs.push(text(this, W / 2, 300 + i * 30, line, 18, C.fg).setOrigin(0.5).setDepth(62)));
-    objs.push(text(this, W / 2, 400, 'Enter: back to the menu', 16, C.warn).setOrigin(0.5).setDepth(62));
+    objs.push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.75).setDepth(60), panel(this, 240, 170, W - 480, 340, C.accent).setDepth(61));
+    objs.push(heading(this, W / 2, 222, `${area.title.split(':')[0]!.toUpperCase()} CLEARED`, 52, C.accent).setOrigin(0.5).setDepth(62));
+    objs.push(text(this, W / 2, 286, `Level ${mastery.characterLevel}   ${mastery.xp} XP`, 22, C.star, true).setOrigin(0.5).setDepth(62));
+    area.clearedText.forEach((line, i) => objs.push(text(this, W / 2, 336 + i * 30, line, 18, C.fg).setOrigin(0.5).setDepth(62)));
+    const hint = area.next ? 'Enter: next area    Esc: menu' : 'Enter: back to the menu';
+    objs.push(text(this, W / 2, 454, hint, 19, C.warn, true).setOrigin(0.5).setDepth(62));
     this.overlay = objs;
-    log.add('area-cleared');
+    this.overlayEnter = () => (area.next ? this.scene.start('World', { area: area.next }) : this.scene.start('Title'));
+    log.add('area-cleared', { area: area.id });
     sfx.win();
-    this.input.keyboard?.once('keydown-ENTER', () => this.scene.start('Title'));
   }
 }

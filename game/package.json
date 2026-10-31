@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/pixelify-sans": "^5.3.0",
     "@kbm/shared": "*",
     "@kbm/vim": "*",
     "phaser": "^4.2.1"

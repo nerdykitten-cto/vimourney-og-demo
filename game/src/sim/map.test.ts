@@ -50,13 +50,13 @@ describe('MapNav', () => {
     n.step('0');
     const r = n.step('w'); // first landmark on row 2 is the wall block at col 10
     expect(r.kind === 'moved' || r.kind === 'blocked').toBe(true);
-    // walk right along row 1 into nothing, then go to the sentry on row 2 col 20
+    // walk right along row 1 into nothing, then go to the stalker on row 2 col 20
     const m = nav();
     for (let i = 0; i < 9; i++) m.step('k'); // row 1
     for (let i = 0; i < 17; i++) m.step('l'); // col 19
     m.step('j'); // row 2 col 19
     const hit = m.step('l');
-    expect(hit).toMatchObject({ kind: 'bump', entity: { kind: 'sentry' } });
+    expect(hit).toMatchObject({ kind: 'bump', entity: { kind: 'stalker' } });
   });
 
   it('keeps the door shut until three enemies are beaten', () => {

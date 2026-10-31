@@ -1,0 +1,65 @@
+Buffer Overflow playtest log, 62 events
+Summary: stalker: 3 won, 0 lost, 0 retreats; sentry: 2 won, 0 lost, 0 retreats; patrol: 2 won, 0 lost, 0 retreats; warden: 2 won, 1 lost, 0 retreats; crawler: 2 won, 0 lost, 0 retreats; blinker: 2 won, 0 lost, 0 retreats; sniper: 1 won, 1 lost, 0 retreats; hopper: 1 won, 0 lost, 0 retreats; seeker: 1 won, 0 lost, 0 retreats; arcade rounds 1, best 200
+
+     0.0s  lesson-open
+    22.0s  battle-start  {"enemy":"stalker"}
+    23.1s  battle  {"enemy":"stalker"}
+    82.5s  battle-won  {"enemy":"stalker","keys":92,"wasted":1,"tick":91,"seconds":59,"integrity":3}
+    89.6s  battle-start  {"enemy":"sentry"}
+    90.6s  battle  {"enemy":"sentry"}
+   111.2s  battle-won  {"enemy":"sentry","keys":34,"wasted":0,"tick":33,"seconds":21,"integrity":2}
+   127.3s  battle-start  {"enemy":"patrol"}
+   128.3s  battle  {"enemy":"patrol"}
+   157.3s  battle-won  {"enemy":"patrol","keys":33,"wasted":0,"tick":32,"seconds":29,"integrity":3}
+   170.2s  battle-start  {"enemy":"warden"}
+   171.2s  battle  {"enemy":"warden"}
+   253.2s  battle-lost  {"enemy":"warden","keys":60,"wasted":0,"tick":60,"seconds":82,"integrity":0}
+   257.4s  battle  {"enemy":"warden"}
+   322.6s  battle-won  {"enemy":"warden","keys":47,"wasted":0,"tick":46,"seconds":65,"integrity":4}
+   325.6s  area-cleared
+   362.3s  arcade-start  {"seed":295387279,"daily":false}
+   423.2s  arcade-end  {"score":200,"captures":6,"wastedKeys":49,"rank":1,"seed":295387279}
+  8977.1s  session-start  {"viewport":"1879x922","dpr":1,"lang":"en-US"}
+  8992.0s  lesson-open
+  9004.3s  battle-start  {"enemy":"crawler"}
+  9005.4s  battle  {"enemy":"crawler"}
+  9054.4s  battle-won  {"enemy":"crawler","seconds":49,"keys":29,"wasted":0,"tick":28,"hits":"4/4","phase":1,"integrity":4,"dodged":0,"damage":{},"moves":{"k":5,"j":6,"x":4,"h":1,"w":10,"l":3}}
+  9071.9s  battle-start  {"enemy":"blinker"}
+  9073.0s  battle  {"enemy":"blinker"}
+  9139.1s  battle-won  {"enemy":"blinker","seconds":66,"keys":30,"wasted":0,"tick":29,"hits":"4/4","phase":1,"integrity":3,"dodged":0,"damage":{"pulse":1},"moves":{"w":9,"x":4,"k":3,"j":2,"b":9,"e":2,"h":1}}
+  9219.5s  lesson-open
+  9264.4s  reset
+  9272.8s  battle-start  {"enemy":"crawler"}
+  9273.8s  battle  {"enemy":"crawler"}
+  9293.9s  battle-won  {"enemy":"crawler","seconds":20,"keys":23,"wasted":0,"tick":22,"hits":"4/4","phase":1,"integrity":3,"dodged":0,"damage":{"pulse":1},"moves":{"w":16,"x":4,"k":1,"j":2}}
+  9298.8s  battle-start  {"enemy":"stalker"}
+  9299.9s  battle  {"enemy":"stalker"}
+  9319.6s  battle-won  {"enemy":"stalker","seconds":20,"keys":55,"wasted":1,"tick":54,"hits":"3/3","phase":1,"integrity":4,"dodged":0,"damage":{},"moves":{"x":4,"w":11,"h":32,"j":2,"l":6}}
+  9325.7s  battle-start  {"enemy":"sentry"}
+  9326.9s  battle  {"enemy":"sentry"}
+  9349.0s  battle-won  {"enemy":"sentry","seconds":22,"keys":39,"wasted":0,"tick":38,"hits":"3/3","phase":1,"integrity":2,"dodged":0,"damage":{"pulse":2},"moves":{"w":16,"j":4,"k":3,"h":13,"x":3}}
+  9356.5s  battle-start  {"enemy":"blinker"}
+  9357.6s  battle  {"enemy":"blinker"}
+  9386.6s  battle-won  {"enemy":"blinker","seconds":29,"keys":24,"wasted":2,"tick":23,"hits":"4/4","phase":1,"integrity":4,"dodged":0,"damage":{},"moves":{"x":6,"w":9,"b":7,"k":1,"j":1}}
+  9393.6s  battle-start  {"enemy":"patrol"}
+  9394.6s  battle  {"enemy":"patrol"}
+  9413.8s  battle-won  {"enemy":"patrol","seconds":19,"keys":11,"wasted":0,"tick":10,"hits":"4/4","phase":1,"integrity":4,"dodged":0,"damage":{},"moves":{"e":3,"x":4,"b":2,"h":2}}
+  9423.0s  battle-start  {"enemy":"warden"}
+  9424.1s  battle  {"enemy":"warden"}
+  9480.8s  battle-won  {"enemy":"warden","seconds":57,"keys":28,"wasted":0,"tick":27,"hits":"12/12","phase":4,"integrity":5,"dodged":0,"damage":{},"moves":{"0":3,"w":3,"x":12,"e":3,"b":5,"$":2}}
+  9484.4s  area-cleared
+  9492.2s  battle-start  {"enemy":"stalker"}
+  9493.3s  battle  {"enemy":"stalker"}
+  9524.0s  battle-won  {"enemy":"stalker","seconds":31,"keys":35,"wasted":0,"tick":34,"hits":"3/3","phase":1,"integrity":4,"dodged":0,"damage":{},"moves":{"w":12,"h":3,"x":3,"k":2,"j":3,"b":10,"e":1,"l":1}}
+  9530.4s  battle-start  {"enemy":"sniper"}
+  9531.5s  battle  {"enemy":"sniper"}
+  9587.9s  battle-lost  {"enemy":"sniper","seconds":56,"keys":60,"wasted":0,"tick":60,"hits":"2/3","phase":1,"integrity":0,"dodged":0,"damage":{"pulse":4},"moves":{"w":7,"e":1,"b":6,"x":2,"l":6,"f":10,"n":2,"k":3,"j":2,"h":13,"v":7,"t":1}}
+  9589.6s  battle  {"enemy":"sniper"}
+  9614.1s  battle-won  {"enemy":"sniper","seconds":25,"keys":23,"wasted":0,"tick":22,"hits":"3/3","phase":1,"integrity":3,"dodged":0,"damage":{"pulse":1},"moves":{"f":3,"q":1,"x":3,"z":1,"v":1,"k":1,"j":1,"b":11,"l":1}}
+  9622.9s  battle-start  {"enemy":"hopper"}
+  9624.0s  battle  {"enemy":"hopper"}
+  9665.8s  battle-won  {"enemy":"hopper","seconds":42,"keys":43,"wasted":0,"tick":42,"hits":"4/4","phase":1,"integrity":2,"dodged":0,"damage":{"pulse":2},"moves":{"w":23,"x":4,"j":1,";":10,",":4,"f":1}}
+  9673.3s  battle-start  {"enemy":"seeker"}
+  9674.3s  battle  {"enemy":"seeker"}
+  9793.3s  battle-won  {"enemy":"seeker","seconds":119,"keys":84,"wasted":1,"tick":83,"hits":"8/8","phase":1,"integrity":1,"dodged":0,"damage":{"pulse":4},"moves":{"0":2,"f":11," ":2,";":5,"k":11,"j":9,"l":9,"v":2,"x":9,"b":17,"g":1,"a":2,"h":1,"s":1,"t":1,"w":1}}
+  9795.6s  area-cleared

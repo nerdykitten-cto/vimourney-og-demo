@@ -1,13 +1,16 @@
 import Phaser from 'phaser';
 import { isCleared, log, mastery, resetProgress, setMuted, sfx } from '../session';
-import { bindKeys, C, H, text, W } from '../ui';
+import { bindKeys, C, H, heading, stage, text, W } from '../ui';
+
+const MENU_Y = 268;
+const MENU_GAP = 46;
 
 type Item = { label: () => string; run: () => void };
 
 export class Title extends Phaser.Scene {
   private index = 0;
   private labels: Phaser.GameObjects.Text[] = [];
-  private cursor!: Phaser.GameObjects.Text;
+  private cursor!: Phaser.GameObjects.Sprite;
   private note!: Phaser.GameObjects.Text;
   private confirmReset = false;
   private items: Item[] = [];
@@ -27,7 +30,7 @@ export class Title extends Phaser.Scene {
     this.index = 0;
     this.confirmReset = false;
     this.labels = [];
-    this.add.rectangle(W / 2, H / 2, W, H, C.bg);
+    stage(this);
 
     // Falling code rain for atmosphere.
     for (let i = 0; i < 40; i++) {
@@ -36,36 +39,39 @@ export class Title extends Phaser.Scene {
       this.tweens.add({ targets: t, y: H + 30, duration: 6000 + Math.random() * 8000, repeat: -1, delay: Math.random() * 4000, onRepeat: () => t.setY(-20) });
     }
 
-    const title = text(this, W / 2, 150, 'BUFFER OVERFLOW', 72, C.accent, true).setOrigin(0.5);
+    const title = heading(this, W / 2, 130, 'BUFFER OVERFLOW', 96, C.accent).setOrigin(0.5);
     this.tweens.add({ targets: title, alpha: { from: 0.8, to: 1 }, duration: 1400, yoyo: true, repeat: -1 });
-    text(this, W / 2, 218, 'a Vim action RPG  ·  proof of concept', 18, C.dim).setOrigin(0.5);
+    text(this, W / 2, 200, 'Every move is a real Vim command. No Vim experience needed.', 20, C.fg).setOrigin(0.5);
+    text(this, W / 2, 232, 'playable demo', 15, C.dim).setOrigin(0.5);
 
-    this.add.sprite(W / 2 - 330, 150, 'actors', 0).setScale(5).play('idle-player');
-    this.add.sprite(W / 2 + 330, 150, 'warden').setScale(3.5).play('idle-warden');
+    this.add.sprite(W / 2 - 500, 136, 'actors', 0).setScale(6).play('idle-player');
+    this.add.sprite(W / 2 + 500, 130, 'warden').setScale(3.5).play('idle-warden');
     this.items = [
-      { label: () => 'Adventure: Area 1, Movement', run: () => this.scene.start('World', { area: 'area-1' }) },
-      { label: () => `Adventure: Area 2, Find and Jump${isCleared('area-1') ? '' : '  (clear Area 1 first)'}`, run: () => this.openArea2() },
+      { label: () => `Adventure: Area 1, Movement${isCleared('area-1') ? '  (cleared)' : ''}`, run: () => this.scene.start('World', { area: 'area-1' }) },
+      { label: () => `Adventure: Area 2, Find and Jump${isCleared('area-2') ? '  (cleared)' : ''}`, run: () => this.scene.start('World', { area: 'area-2' }) },
       { label: () => 'Arcade Room: Target Rush', run: () => this.scene.start('Arcade') },
       { label: () => 'Character sheet', run: () => this.scene.start('Sheet', { back: 'Title' }) },
       { label: () => `Sound: ${sfx.muted ? 'off' : 'on'}`, run: () => this.toggleSound() },
-      { label: () => `Export playtest log (${log.count} events)`, run: () => this.exportLog() },
+      { label: () => `Fullscreen: ${document.fullscreenElement ? 'on' : 'off'}`, run: () => this.toggleFullscreen() },
+      { label: () => 'Save play log', run: () => this.exportLog() },
       { label: () => (this.confirmReset ? 'Really reset progress? press y' : 'Reset progress'), run: () => this.askReset() },
     ];
     this.items.forEach((it, i) => {
-      const t = text(this, W / 2 - 200, 292 + i * 48, it.label(), 28, C.fg);
+      const t = text(this, W / 2 - 250, MENU_Y + i * MENU_GAP, it.label(), 24, C.fg);
       t.setInteractive({ useHandCursor: true });
       t.on('pointerover', () => this.select(i));
       t.on('pointerdown', () => this.activate());
       this.labels.push(t);
     });
-    this.cursor = text(this, W / 2 - 240, 292, '▶', 28, C.normal, true);
-    this.note = text(this, W / 2, 650, '', 18, C.warn).setOrigin(0.5);
-    text(this, W / 2, 684, 'j / k move   Enter choose   Tab character sheet in the world   Esc back', 14, C.dim).setOrigin(0.5);
-    text(this, W / 2, 20, `Level ${mastery.characterLevel}   ${mastery.xp} XP`, 14, C.dim).setOrigin(0.5, 0);
+    this.cursor = this.add.sprite(W / 2 - 285, MENU_Y + 15, 'actors', 0).setScale(1.5).play('idle-player');
+    this.note = text(this, W / 2, 648, '', 18, C.warn).setOrigin(0.5);
+    text(this, W / 2, 684, 'j / k or arrow keys: move    Enter: choose    Esc: back', 16, C.dim).setOrigin(0.5);
+    text(this, W / 2, 16, `Level ${mastery.characterLevel}   ${mastery.xp} XP`, 16, C.dim).setOrigin(0.5, 0);
     this.refresh();
 
     bindKeys(this, (k) => {
       sfx.menu();
+      this.note.setText('');
       if (this.confirmReset) {
         if (k === 'y') {
           resetProgress();
@@ -76,8 +82,8 @@ export class Title extends Phaser.Scene {
         this.refresh();
         return;
       }
-      if (k === 'j') this.select((this.index + 1) % this.items.length);
-      else if (k === 'k') this.select((this.index - 1 + this.items.length) % this.items.length);
+      if (k === 'j' || k === 'ArrowDown') this.select((this.index + 1) % this.items.length);
+      else if (k === 'k' || k === 'ArrowUp') this.select((this.index - 1 + this.items.length) % this.items.length);
       else if (k === 'g') this.select(0);
       else if (k === 'G') this.select(this.items.length - 1);
       else if (k === 'Enter') this.activate();
@@ -103,12 +109,18 @@ export class Title extends Phaser.Scene {
     this.items.forEach((it, i) => {
       this.labels[i]!.setText(it.label()).setColor(i === this.index ? '#ffffff' : '#94a3b8');
     });
-    this.cursor.setY(292 + this.index * 48);
+    this.cursor.setY(MENU_Y + 15 + this.index * MENU_GAP);
   }
 
   private toggleSound(): void {
     setMuted(!sfx.muted);
     log.add('sound', { muted: sfx.muted });
+  }
+
+  private toggleFullscreen(): void {
+    const done = (): void => this.refresh();
+    if (document.fullscreenElement) void document.exitFullscreen().finally(done);
+    else void document.documentElement.requestFullscreen().catch(() => this.note.setText('Your browser blocked fullscreen. F11 works too.')).finally(done);
   }
 
   private askReset(): void {
@@ -123,6 +135,6 @@ export class Title extends Phaser.Scene {
     a.download = 'buffer-overflow-playtest-log.txt';
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    this.note.setText('Saved buffer-overflow-playtest-log.txt');
+    this.note.setText('Saved buffer-overflow-playtest-log.txt to your downloads.');
   }
 }

@@ -25,6 +25,9 @@ export interface EnemyInfo {
   blurb: string;
   lines: string[];
   maxIntegrity: number;
+  /** Shown on the card before the first fight: how to beat it, and the keys that do it. */
+  tip: string;
+  moves: string[];
 }
 
 export const ENEMIES: Record<EnemyId, EnemyInfo> = {
@@ -34,6 +37,8 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
     blurb: 'Weak points sit far along its lines. It pulses if you dawdle.',
     lines: ['guard.watch(door, window, gate, hall, vault, exit, tower);', 'if (alert) { signal(red); lockdown(all); }', 'return sentry;'],
     maxIntegrity: 4,
+    tip: 'Run to the far end of a line with $, hop back with b, then strike. Walking with h and l is too slow.',
+    moves: ['$', 'b', 'w', 'j', 'x'],
   },
   patrol: {
     id: 'patrol',
@@ -41,6 +46,8 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
     blurb: 'Its weak point walks back and forth. Meet it, do not chase it.',
     lines: ['patrol(north, east, south, west, north, east, south, west, home);', 'return patrol;'],
     maxIntegrity: 4,
+    tip: 'Hit it where it is going to be. e and b hop past it faster than it walks.',
+    moves: ['e', 'b', 'w', 'x'],
   },
   stalker: {
     id: 'stalker',
@@ -48,6 +55,8 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
     blurb: 'It hunts your cursor. Keep moving while you strike.',
     lines: ['stalk(target, path, shadow, corner, hallway, ceiling, floor);', 'if (seen) { hide(); } else { hunt(); }', 'return stalker;'],
     maxIntegrity: 4,
+    tip: 'It moves every second key. Keep hopping with w and b so it never catches you.',
+    moves: ['w', 'b', 'j', 'k', 'x'],
   },
   crawler: {
     id: 'crawler',
@@ -55,6 +64,8 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
     blurb: 'Its weak points hide at the very start and end of lines. Use 0 and $ to run the edges.',
     lines: ['fn crawl(start) {', 'let node = start.next;', 'while (node) { visit(node); }', '}'],
     maxIntegrity: 4,
+    tip: 'Every weak point is on an edge. $ takes you to the end of a line, 0 to the start.',
+    moves: ['$', '0', 'j', 'k', 'x'],
   },
   blinker: {
     id: 'blinker',
@@ -62,6 +73,8 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
     blurb: 'Its weak point blinks to a new word. The glowing outline shows where it lands next.',
     lines: ['one two three four five six seven eight', 'nine ten eleven twelve thirteen fourteen', 'fifteen sixteen seventeen eighteen nineteen'],
     maxIntegrity: 4,
+    tip: 'When the outline appears, head there first and let the weak point land on you.',
+    moves: ['w', 'b', 'e', 'j', 'k', 'x'],
   },
   sniper: {
     id: 'sniper',
@@ -69,6 +82,8 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
     blurb: 'Its weak points sit on rare letters deep in long lines. Hook onto them with f.',
     lines: ['the quick brown fox jumps over the lazy dog while zebras vex quiet jackals', 'const handler = (event) => dispatch(event.target.value);'],
     maxIntegrity: 4,
+    tip: 'Read the pink letter, press f, then press that letter. That is one hook, however far away it is.',
+    moves: ['f', 'j', 'k', 'x'],
   },
   hopper: {
     id: 'hopper',
@@ -76,6 +91,8 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
     blurb: 'Its weak points repeat the same character. Hook the first one, then hop along with ;',
     lines: ['one.two.three.four.five.six.seven.eight.nine.ten;', 'a,b,c,d,e,f,g,h,i,j,k,l,m;'],
     maxIntegrity: 4,
+    tip: 'Press f and the character once, then ; repeats the hook. Use , if you hop too far.',
+    moves: ['f', ';', ',', 'j', 'x'],
   },
   seeker: {
     id: 'seeker',
@@ -83,6 +100,8 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
     blurb: 'Its weak point blinks to any letter. The outline shows where. Hook it before it moves again.',
     lines: ['the quick brown fox jumps over the lazy dog while zebras vex quiet jackals', 'const handler = (event) => dispatch(event.target.value);', 'one.two.three.four.five.six.seven.eight.nine.ten;'],
     maxIntegrity: 5,
+    tip: 'Read the letter, hook it with f going right or F going left, then strike. ; helps if the letter repeats.',
+    moves: ['f', 'F', ';', 'j', 'k', 'x'],
   },
   warden: {
     id: 'warden',
@@ -90,6 +109,8 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
     blurb: 'Its weak point jumps in patterns. Read the arrow. Later it sweeps whole rows.',
     lines: ['alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu', 'node.link(root, branch, leaf);  // walk the tree', 'return warden;'],
     maxIntegrity: 5,
+    tip: 'Phase 1 walks forward, 2 walks back, 3 runs the edges, 4 mixes them. Later, press j or k to leave a glowing row.',
+    moves: ['w', 'b', '0', '$', 'j', 'k', 'x'],
   },
 };
 
@@ -255,6 +276,11 @@ export class Battle {
 
   get cursor(): Pos {
     return { ...this.engine.state.cursor };
+  }
+
+  /** True between f and its letter: the next key is an argument, not a command. */
+  get awaitingChar(): boolean {
+    return Boolean(this.engine.state.pending.awaiting);
   }
 
   get mode(): string {

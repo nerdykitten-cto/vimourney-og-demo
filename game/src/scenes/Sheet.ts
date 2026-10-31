@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { LEVEL_NAMES, progressFor, SKILLS, THRESHOLDS } from '../sim/mastery';
 import { mastery } from '../session';
-import { bindKeys, C, H, panel, text, W } from '../ui';
+import { bindKeys, C, H, heading, panel, stage, text, W } from '../ui';
 
 export class Sheet extends Phaser.Scene {
   private back = 'Title';
@@ -15,10 +15,10 @@ export class Sheet extends Phaser.Scene {
   }
 
   create(): void {
-    this.add.rectangle(W / 2, H / 2, W, H, C.bg);
-    text(this, 30, 20, 'CHARACTER', 30, C.accent, true);
+    stage(this);
+    heading(this, 30, 12, 'Character', 40, C.accent);
     text(this, W - 30, 26, `Level ${mastery.characterLevel}   ${mastery.xp} XP`, 20, C.star, true).setOrigin(1, 0);
-    text(this, 30, 62, 'Every command is a skill. Mastery only rises when you use it well.', 15, C.dim);
+    text(this, 30, 66, 'Every command is a skill. Mastery only rises when you use it well.', 15, C.dim);
     panel(this, 20, 96, W - 40, 560);
 
     text(this, 50, 112, 'skill', 13, C.dim);

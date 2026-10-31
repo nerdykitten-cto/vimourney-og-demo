@@ -4,8 +4,12 @@ import { normalizeKey } from '@kbm/shared';
 export const W = 1280;
 export const H = 720;
 
-/** Text is rendered at device resolution so it stays sharp when the canvas is scaled to the window. */
-export const TEXT_RES = Math.min(3, Math.max(2, Math.ceil(window.devicePixelRatio || 1)));
+/**
+ * The canvas is drawn at a whole multiple of the design size, big enough for the whole screen, and the
+ * camera zooms to match. Scenes keep working in 1280x720 units while text and sprites stay sharp at
+ * any window size, including fullscreen and hi-DPI displays.
+ */
+export const ZOOM = Math.min(3, Math.max(1, Math.ceil(Math.max(screen.width / W, screen.height / H) * (window.devicePixelRatio || 1))));
 
 export const C = {
   bg: 0x0a0e13,
@@ -24,10 +28,22 @@ export const C = {
 
 export const hex = (n: number): string => `#${n.toString(16).padStart(6, '0')}`;
 
-export const FONT = 'ui-monospace, "SF Mono", "Cascadia Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace';
+export const FONT = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
+export const DISPLAY_FONT = '"Pixelify Sans", "IBM Plex Mono", monospace';
 
 export function text(scene: Phaser.Scene, x: number, y: number, s: string, size = 18, color = C.fg, bold = false): Phaser.GameObjects.Text {
-  return scene.add.text(x, y, s, { fontFamily: FONT, fontSize: `${size}px`, color: hex(color), fontStyle: bold ? 'bold' : 'normal', resolution: TEXT_RES });
+  return scene.add.text(x, y, s, { fontFamily: FONT, fontSize: `${size}px`, color: hex(color), fontStyle: bold ? 'bold' : 'normal', resolution: ZOOM });
+}
+
+/** Big pixel-font text for titles and banners. */
+export function heading(scene: Phaser.Scene, x: number, y: number, s: string, size = 36, color = C.fg): Phaser.GameObjects.Text {
+  return scene.add.text(x, y, s, { fontFamily: DISPLAY_FONT, fontSize: `${size}px`, color: hex(color), fontStyle: 'bold', resolution: ZOOM });
+}
+
+/** Every scene starts here: point the camera at the 1280x720 stage and fill it. */
+export function stage(scene: Phaser.Scene): void {
+  scene.cameras.main.setZoom(ZOOM).centerOn(W / 2, H / 2);
+  scene.add.rectangle(W / 2, H / 2, W, H, C.bg);
 }
 
 export function panel(scene: Phaser.Scene, x: number, y: number, w: number, h: number, border: number = C.line, fill: number = C.panel): Phaser.GameObjects.Graphics {
@@ -39,7 +55,7 @@ export function panel(scene: Phaser.Scene, x: number, y: number, w: number, h: n
 
 /** Width of one monospace character at `size` px. */
 export function charWidth(scene: Phaser.Scene, size: number): number {
-  const t = scene.add.text(0, 0, 'M'.repeat(20), { fontFamily: FONT, fontSize: `${size}px` });
+  const t = scene.add.text(0, 0, 'M'.repeat(20), { fontFamily: FONT, fontSize: `${size}px`, resolution: ZOOM });
   const w = t.width / 20;
   t.destroy();
   return w;
@@ -53,7 +69,7 @@ export function keycap(scene: Phaser.Scene, x: number, y: number, label: string,
   bg.fillStyle(C.panel2, 1).fillRoundedRect(0, 0, w, 28, 6);
   bg.lineStyle(1, color, 0.6).strokeRoundedRect(0.5, 0.5, w - 1, 27, 6);
   t.setPosition((w - t.width) / 2, 4);
-  return scene.add.container(x, y, [bg, t]);
+  return scene.add.container(x, y, [bg, t]).setSize(w, 28);
 }
 
 export function keyLabel(k: string): string {
@@ -118,8 +134,9 @@ export function bindKeys(scene: Phaser.Scene, fn: (key: string) => void): void {
   const kb = scene.input.keyboard;
   if (!kb) return;
   const handler = (e: KeyboardEvent): void => {
-    const k = normalizeKey(e);
-    if (k === null) return;
+    // Arrow keys are not game keys, but scenes want to say so. Browser chords like Ctrl+R stay the browser's.
+    const k = e.key.startsWith('Arrow') ? e.key : normalizeKey(e);
+    if (k === null || (k.startsWith('Control-') && k !== 'Control-[')) return;
     e.preventDefault();
     fn(k);
   };

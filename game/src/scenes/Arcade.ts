@@ -3,7 +3,7 @@ import { createVimEngine } from '@kbm/vim';
 import { addHighScore, RUSH_SECONDS, TargetRush, type HighScore } from '../sim/arcade';
 import { createRng } from '../sim/rng';
 import { log, mastery, sfx, store } from '../session';
-import { bindKeys, burst, C, charWidth, H, keyLabel, panel, text, W } from '../ui';
+import { bindKeys, burst, C, charWidth, H, heading, keyLabel, panel, stage, text, W } from '../ui';
 
 const FONT_SIZE = 26;
 const AX = 90;
@@ -52,8 +52,8 @@ export class Arcade extends Phaser.Scene {
     this.overlay = [];
     this.lineTexts = [];
     this.cw = charWidth(this, FONT_SIZE);
-    this.add.rectangle(W / 2, H / 2, W, H, C.bg);
-    text(this, 24, 16, 'ARCADE ROOM: TARGET RUSH', 28, C.visual, true);
+    stage(this);
+    heading(this, 24, 12, 'Target Rush', 40, C.visual);
     this.scoreText = text(this, W - 24, 16, 'SCORE 0', 28, C.star, true).setOrigin(1, 0);
     this.timeText = text(this, W / 2, 8, '', 48, C.fg, true).setOrigin(0.5, 0);
     this.comboText = text(this, 24, 60, '', 20, C.accent, true);
@@ -128,6 +128,7 @@ export class Arcade extends Phaser.Scene {
     const r = this.game_.feed(key);
     if (!r.accepted) {
       sfx.blocked();
+      if (key.startsWith('Arrow')) this.hintText.setText('Arrow keys are off here: use h j k l, or better, w b e 0 $');
       return;
     }
     sfx.key();
@@ -216,7 +217,7 @@ export class Arcade extends Phaser.Scene {
 
     const o: Phaser.GameObjects.GameObject[] = [];
     o.push(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.8).setDepth(40), panel(this, 300, 70, W - 600, 580, C.visual).setDepth(41));
-    o.push(text(this, W / 2, 110, "TIME'S UP", 48, C.visual, true).setOrigin(0.5).setDepth(42));
+    o.push(heading(this, W / 2, 112, "TIME'S UP", 56, C.visual).setOrigin(0.5).setDepth(42));
     o.push(text(this, W / 2, 180, `${s.score} points`, 40, C.star, true).setOrigin(0.5).setDepth(42));
     o.push(text(this, W / 2, 230, `${s.captures.length} targets   ${waste} extra keys${xp ? `   +${xp} XP (daily bonus)` : ''}`, 16, C.dim).setOrigin(0.5).setDepth(42));
     o.push(text(this, 360, 275, 'TOP TEN', 15, C.dim).setDepth(42));

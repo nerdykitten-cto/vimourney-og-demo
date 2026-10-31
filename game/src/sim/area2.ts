@@ -38,7 +38,7 @@ export const area2: AreaDef = {
     [',', 'repeat it the other way'],
     ['Area 1 moves', 'every enemy here still asks for h j k l w b e 0 $'],
   ],
-  clearedText: ['The Seeker is purged. More areas arrive in the full game:', 'vertical jumps, text objects, then operators.'],
+  clearedText: ['That is the whole demo. Thanks for playing!', 'Next in the full game: big jumps, text objects, then operators.', 'Try for a high score in the Arcade Room.'],
   next: null,
 };
 

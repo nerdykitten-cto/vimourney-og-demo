@@ -40,9 +40,9 @@ function build(): string[] {
   g[3]![34] = 'D';
   g[3]![38] = 'W';
   g[1]![2] = 'L';
-  g[2]![20] = 'S';
+  g[2]![20] = 'T';
   g[8]![28] = 'P';
-  g[9]![12] = 'T';
+  g[9]![12] = 'S'; // first fight: one k and one w from the start
   g[8]![6] = 'C';
   g[5]![36] = 'B';
   return g.map((row) => row.join(''));

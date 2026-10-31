@@ -1,19 +1,24 @@
-import Phaser from 'phaser';
-import { Arcade } from './scenes/Arcade';
-import { Boot } from './scenes/Boot';
-import { Battle } from './scenes/Battle';
-import { Sheet } from './scenes/Sheet';
-import { Title } from './scenes/Title';
-import { World } from './scenes/World';
-import { C, H, W } from './ui';
+import '@fontsource/ibm-plex-mono/latin-400.css';
+import '@fontsource/ibm-plex-mono/latin-700.css';
+import '@fontsource/pixelify-sans/latin-700.css';
 
-new Phaser.Game({
-  type: Phaser.AUTO,
-  parent: 'game',
-  width: W,
-  height: H,
-  backgroundColor: C.bg,
-  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: [Boot, Title, World, Battle, Sheet, Arcade],
-  render: { antialias: true, roundPixels: true },
-});
+const notice = document.getElementById('notice')!;
+const anyway = document.getElementById('anyway')!;
+
+/** Phones and tablets have no Esc, Tab or real typing, so they get a note instead of a broken game. */
+const touchOnly = matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+async function start(): Promise<void> {
+  notice.hidden = true;
+  document.getElementById('loading')!.hidden = false;
+  // Canvas text does not wait for web fonts, and battles measure character width, so fonts come first.
+  const fonts = ['400 16px "IBM Plex Mono"', '700 16px "IBM Plex Mono"', '700 16px "Pixelify Sans"'].map((f) => document.fonts.load(f));
+  await Promise.race([Promise.all(fonts), new Promise((done) => setTimeout(done, 2500))]);
+  const { startGame } = await import('./game');
+  startGame();
+}
+
+if (touchOnly) {
+  notice.hidden = false;
+  anyway.addEventListener('click', () => void start());
+} else void start();

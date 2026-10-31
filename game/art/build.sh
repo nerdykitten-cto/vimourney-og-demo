@@ -12,3 +12,5 @@ sheet actors player.aseprite sentry.aseprite patrol.aseprite stalker.aseprite cr
 sheet tiles floor0.aseprite floor1.aseprite floor2.aseprite wall.aseprite doorClosed.aseprite doorOpen.aseprite
 sheet warden warden.aseprite
 sheet seeker seeker.aseprite
+# Favicon: the player on the game's background, 4x so it survives browser tab scaling.
+"$ASE" -b --frame-range 0,0 player.aseprite --scale 4 --save-as "$OUT/../favicon.png"
