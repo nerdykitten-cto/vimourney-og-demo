@@ -1,34 +1,22 @@
 import { sendKey } from './keys';
 
-/**
- * The upright keyboard: two halves that join below the game. null is a gap that keeps the rows staggered.
- */
-const LEFT: Array<Array<string | null>> = [
-  ['Escape', '1', '2', '3', '4', '5'],
-  ['Tab', 'q', 'w', 'e', 'r', 't'],
-  [null, 'a', 's', 'd', 'f', 'g'],
-  ['Shift', 'z', 'x', 'c', 'v', 'b'],
-];
-const RIGHT: Array<Array<string | null>> = [
-  ['6', '7', '8', '9', '0', '='],
-  ['y', 'u', 'i', 'o', 'p', null],
-  ['h', 'j', 'k', 'l', ';', 'Enter'],
-  ['n', 'm', ',', '.', '/', 'Shift'],
-];
-
 interface Cap {
   key: string;
   /** Position in key widths, from the row's real place on a physical keyboard. */
   x: number;
   y: number;
+  /** Where this key goes when the halves join upright, if that differs from x. */
+  upright?: number;
 }
 
 const run = (y: number, x: number, keys: string): Cap[] => [...keys].map((key, i) => ({ key, x: x + i, y }));
 
 /**
- * The sideways keyboard: square keys at their real positions, split along the line 7|8, y|u, g|h, b|n.
- * Wide keys like Tab and Shift are squares pinned to the outer edge, and the gap beside them is the
- * width they would have on a physical keyboard. x values on the right start from h, the leftmost key there.
+ * Square keys at their real positions, in two halves split along 7|8, y|u, g|h, b|n. Sideways each half
+ * sits under a thumb; upright they join into one keyboard (index.html decides). Wide keys like Tab and
+ * Shift are squares pinned to the outer edge, and the gap beside them is the width they would have on a
+ * physical keyboard. x values on the right start from h, the leftmost key there. Upright the right edge
+ * moves in by half a key to fit the width, which also makes the Caps/Ent and Shift gaps mirror each other.
  */
 const BOARD_LEFT: Cap[] = [
   { key: 'Escape', x: 0, y: -1.25 },
@@ -42,13 +30,13 @@ const BOARD_LEFT: Cap[] = [
 ];
 const BOARD_RIGHT: Cap[] = [
   ...run(0, 1.25, '890-='),
-  { key: 'Backspace', x: 7.25, y: 0 },
+  { key: 'Backspace', x: 7.25, y: 0, upright: 6.75 },
   ...run(1, 0.75, 'uiop[]'),
-  { key: '#', x: 7.25, y: 1 },
+  { key: '#', x: 7.25, y: 1, upright: 6.75 },
   ...run(2, 0, "hjkl;'"),
-  { key: 'Enter', x: 7.25, y: 2 },
+  { key: 'Enter', x: 7.25, y: 2, upright: 6.75 },
   ...run(3, 0.5, 'nm,./'),
-  { key: 'Shift', x: 7.25, y: 3 },
+  { key: 'Shift', x: 7.25, y: 3, upright: 6.75 },
 ];
 
 /** The shifted symbols of the UK layout. */
@@ -59,7 +47,7 @@ const MOVES = new Set(['h', 'j', 'k', 'l', 'w', 'b', 'e', '0', '4', 'x', 'f', 't
 
 const isLetter = (key: string): boolean => /^[a-z]$/.test(key);
 
-export function buildKeypad(left: HTMLElement, right: HTMLElement, boardLeft: HTMLElement, boardRight: HTMLElement): void {
+export function buildKeypad(boardLeft: HTMLElement, boardRight: HTMLElement): void {
   let shift = false;
   let caps = false;
   const keys: Array<{ key: string; el: HTMLButtonElement }> = [];
@@ -110,22 +98,14 @@ export function buildKeypad(left: HTMLElement, right: HTMLElement, boardLeft: HT
     return el;
   };
 
-  const row = (cells: Array<string | null>): HTMLElement => {
-    const out = document.createElement('div');
-    out.className = 'row';
-    for (const key of cells) out.append(key === null ? document.createElement('span') : makeKey(key));
-    return out;
-  };
-
   const place = (cap: Cap): HTMLElement => {
     const el = makeKey(cap.key);
     el.style.setProperty('--x', String(cap.x));
     el.style.setProperty('--y', String(cap.y));
+    if (cap.upright !== undefined) el.style.setProperty('--upright', String(cap.upright));
     return el;
   };
 
-  left.append(...LEFT.map(row));
-  right.append(...RIGHT.map(row));
   boardLeft.append(...BOARD_LEFT.map(place));
   boardRight.append(...BOARD_RIGHT.map(place));
 }
