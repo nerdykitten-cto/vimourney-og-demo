@@ -5,7 +5,7 @@ import { buildKeypad } from './keypad';
 
 const notice = document.getElementById('notice')!;
 
-/** Phones and tablets get a start screen first: going fullscreen and sideways needs a tap. */
+/** Phones and tablets get a start screen first: going fullscreen needs a tap. */
 const touchOnly = matchMedia('(hover: none) and (pointer: coarse)').matches;
 
 async function start(): Promise<void> {
@@ -18,14 +18,9 @@ async function start(): Promise<void> {
   startGame();
 }
 
-/** iPhones refuse both of these, so the game also has to work without them. */
-async function goSideways(): Promise<void> {
-  try {
-    await document.documentElement.requestFullscreen?.();
-    await (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }).lock?.('landscape');
-  } catch {
-    // The rotate prompt covers this.
-  }
+/** iPhones refuse this, so the game also has to work inside the browser's own bars. */
+function goFullscreen(): void {
+  document.documentElement.requestFullscreen?.().catch(() => undefined);
 }
 
 if (touchOnly) {
@@ -33,7 +28,7 @@ if (touchOnly) {
   document.getElementById('play')!.addEventListener('click', () => {
     document.body.classList.add('touch');
     buildKeypad(document.getElementById('left')!, document.getElementById('right')!);
-    void goSideways();
+    goFullscreen();
     void start();
   });
   document.getElementById('anyway')!.addEventListener('click', () => void start());

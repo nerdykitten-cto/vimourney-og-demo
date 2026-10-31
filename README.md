@@ -6,7 +6,7 @@
 
 **[Play the demo in your browser](https://vimourney-og-demo.vercel.app)**
 
-This repository holds the demo and its source. The game plays best in a desktop browser with a real keyboard. On a phone, turn it sideways and play on a split on-screen QWERTY keyboard, with one half under each thumb.
+This repository holds the demo and its source. The game plays best in a desktop browser with a real keyboard. On a phone you play on an on-screen QWERTY keyboard, held upright or sideways. Sideways gives a bigger game.
 
 ## Screenshots
 

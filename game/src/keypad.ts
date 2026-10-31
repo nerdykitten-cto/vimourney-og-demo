@@ -1,8 +1,9 @@
 import { sendKey } from './keys';
 
 /**
- * An on-screen QWERTY keyboard, split around the game so each thumb keeps its real keys: h j k l stay on
- * the home row, 0 stays above p, and $ stays on Shift+4. null is a gap that keeps the rows staggered.
+ * An on-screen QWERTY keyboard in two halves: split around the game when the phone is sideways, joined
+ * below it when upright (index.html decides). h j k l stay on the home row, 0 stays above p, and $ stays
+ * on Shift+4. null is a gap that keeps the rows staggered.
  */
 const LEFT: Array<Array<string | null>> = [
   ['Escape', '1', '2', '3', '4', '5'],
