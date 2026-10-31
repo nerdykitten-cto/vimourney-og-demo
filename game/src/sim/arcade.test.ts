@@ -29,6 +29,19 @@ describe('TargetRush', () => {
     expect(g.combo).toBe(1);
   });
 
+  it('the hint starts from the current cursor and actually reaches the target', () => {
+    const g = new TargetRush(createVimEngine, createRng(11));
+    expect(g.hint).toBeNull();
+    for (let i = 0; i < 2; i++) g.feed('j');
+    while (!g.hint) {
+      g.feed('j');
+      g.feed('k');
+    }
+    const capturesBefore = g.captures.length;
+    for (const k of [...g.hint]) g.feed(k);
+    expect(g.captures.length).toBe(capturesBefore + 1);
+  });
+
   it('a wasteful route scores less and resets the combo', () => {
     const g = new TargetRush(createVimEngine, createRng(11));
     g.combo = 5;

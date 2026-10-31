@@ -39,7 +39,7 @@ export class Title extends Phaser.Scene {
       this.tweens.add({ targets: t, y: H + 30, duration: 6000 + Math.random() * 8000, repeat: -1, delay: Math.random() * 4000, onRepeat: () => t.setY(-20) });
     }
 
-    const title = heading(this, W / 2, 130, 'BUFFER OVERFLOW', 96, C.accent).setOrigin(0.5);
+    const title = heading(this, W / 2, 130, 'VIMOURNEY', 96, C.accent).setOrigin(0.5);
     this.tweens.add({ targets: title, alpha: { from: 0.8, to: 1 }, duration: 1400, yoyo: true, repeat: -1 });
     text(this, W / 2, 200, 'Every move is a real Vim command. No Vim experience needed.', 20, C.fg).setOrigin(0.5);
     text(this, W / 2, 232, 'playable demo', 15, C.dim).setOrigin(0.5);
@@ -132,9 +132,9 @@ export class Title extends Phaser.Scene {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'buffer-overflow-playtest-log.txt';
+    a.download = 'vimourney-playtest-log.txt';
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    this.note.setText('Saved buffer-overflow-playtest-log.txt to your downloads.');
+    this.note.setText('Saved vimourney-playtest-log.txt to your downloads.');
   }
 }

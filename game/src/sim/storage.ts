@@ -4,7 +4,7 @@ export interface Store {
   set(key: string, value: unknown): void;
 }
 
-export function createStore(prefix = 'buffer-overflow:'): Store {
+export function createStore(prefix = 'vimourney:'): Store {
   const mem = new Map<string, string>();
   const ls = (): Storage | null => {
     try {

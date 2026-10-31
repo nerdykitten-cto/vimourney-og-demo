@@ -145,8 +145,10 @@ export class Arcade extends Phaser.Scene {
       this.feed.setText(`+${c.points}   you used ${c.keys.length}, best was ${c.best.length}${c.best.length ? `  (${c.best.map(keyLabel).join(' ')})` : ''}${extra === 0 ? '   PERFECT' : ''}`);
       this.feed.setColor(extra === 0 ? '#5af78e' : extra <= 1 ? '#cbd5e1' : '#ffb86c');
     }
-    if (st.hint && this.hintText.text === '') this.hintsShown++;
-    this.hintText.setText(st.hint ? `Hint: the best route is ${st.hint.map(keyLabel).join(' ')}  (${st.hint.length} keys)` : r.capture ? '' : this.hintText.text);
+    const hint = r.capture ? null : st.hint;
+    if (hint && this.hintText.text === '') this.hintsShown++;
+    if (hint) this.hintText.setText(`Hint: from here, try ${hint.map(keyLabel).join(' ')}  (${hint.length} ${hint.length === 1 ? 'key' : 'keys'})`);
+    else if (r.capture) this.hintText.setText('');
     this.refresh();
   }
 

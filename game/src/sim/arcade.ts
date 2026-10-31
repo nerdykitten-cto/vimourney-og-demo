@@ -121,9 +121,10 @@ export class TargetRush {
     return { accepted: true, capture: null };
   }
 
-  /** The best route, once the player has burned enough keys on this target to need a nudge. */
+  /** The best route from where the cursor is now, once the player has burned enough keys on this target to need a nudge. */
   get hint(): string[] | null {
-    return this.best.length > 0 && this.keysSince.length >= this.best.length + HINT_AFTER_EXTRA ? this.best : null;
+    if (this.best.length === 0 || this.keysSince.length < this.best.length + HINT_AFTER_EXTRA) return null;
+    return optimalRoute(this.factory, this.lines, this.cursor, this.target, { maxKeys: 6 });
   }
 
   /** Best route from the current cursor to the current target (for a hint line). */

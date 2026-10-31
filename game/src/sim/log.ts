@@ -32,7 +32,7 @@ export class PlaytestLog {
       const { t, ev, ...rest } = e;
       return `${((t - t0) / 1000).toFixed(1).padStart(8)}s  ${ev}${Object.keys(rest).length ? '  ' + JSON.stringify(rest) : ''}`;
     });
-    return `Buffer Overflow playtest log, ${this.events.length} events\n${this.summary()}\n${lines.join('\n')}\n`;
+    return `Vimourney playtest log, ${this.events.length} events\n${this.summary()}\n${lines.join('\n')}\n`;
   }
 
   /** Per-enemy attempts and wins, plus arcade rounds, so the log reads at a glance. */

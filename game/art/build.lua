@@ -1,4 +1,4 @@
--- Draws every sprite of Buffer Overflow with Aseprite's scripting API.
+-- Draws every sprite of Vimourney with Aseprite's scripting API.
 -- Run: game/art/build.sh   (aseprite -b --script build.lua)
 local OUT = app.params["out"] or "."
 

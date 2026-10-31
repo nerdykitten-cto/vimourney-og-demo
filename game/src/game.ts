@@ -11,7 +11,7 @@ export function startGame(): void {
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
-    title: 'Buffer Overflow',
+    title: 'Vimourney',
     banner: false,
     width: W * ZOOM,
     height: H * ZOOM,

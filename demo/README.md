@@ -1,4 +1,4 @@
-# Buffer Overflow: playable demo
+# Vimourney: playable demo
 
 A top-down action RPG where every move is a real Vim command. This folder is the finished web build, ready to host as a static site. It has no dependencies.
 
