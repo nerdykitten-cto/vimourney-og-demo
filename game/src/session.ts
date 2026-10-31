@@ -51,6 +51,9 @@ export function resetProgress(): void {
   store.set('coached', false);
   store.set('fought', false);
   for (const id of Object.keys(ENEMIES)) store.set(`seen-${id}`, false);
+  // A new run starts the arcade clean too, so its top ten agrees with Run stats.
+  store.set('arcade-hs', []);
+  store.set('arcade-xp-day', '');
   mastery.reset();
 }
 

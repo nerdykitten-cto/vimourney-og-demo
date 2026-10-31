@@ -3,6 +3,7 @@ import { Arcade } from './scenes/Arcade';
 import { Battle } from './scenes/Battle';
 import { Boot } from './scenes/Boot';
 import { Sheet } from './scenes/Sheet';
+import { Stats } from './scenes/Stats';
 import { Title } from './scenes/Title';
 import { World } from './scenes/World';
 import { C, H, W, ZOOM } from './ui';
@@ -17,7 +18,7 @@ export function startGame(): void {
     height: H * ZOOM,
     backgroundColor: C.bg,
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [Boot, Title, World, Battle, Sheet, Arcade],
+    scene: [Boot, Title, World, Battle, Sheet, Stats, Arcade],
     render: { antialias: true },
   });
   if (import.meta.env.DEV) (window as unknown as { game: Phaser.Game }).game = game;

@@ -53,7 +53,7 @@ export class Title extends Phaser.Scene {
       { label: () => 'Character sheet', run: () => this.scene.start('Sheet', { back: 'Title' }) },
       { label: () => `Sound: ${sfx.muted ? 'off' : 'on'}`, run: () => this.toggleSound() },
       { label: () => `Fullscreen: ${document.fullscreenElement ? 'on' : 'off'}`, run: () => this.toggleFullscreen() },
-      { label: () => 'Save play log', run: () => this.exportLog() },
+      { label: () => 'Run stats', run: () => this.scene.start('Stats') },
       { label: () => (this.confirmReset ? 'Really reset progress? press y' : 'Reset progress'), run: () => this.askReset() },
     ];
     this.items.forEach((it, i) => {
@@ -127,16 +127,5 @@ export class Title extends Phaser.Scene {
 
   private askReset(): void {
     this.confirmReset = true;
-  }
-
-  private exportLog(): void {
-    const blob = new Blob([log.toText()], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'vimourney-playtest-log.txt';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    this.note.setText('Saved vimourney-playtest-log.txt to your downloads.');
   }
 }
