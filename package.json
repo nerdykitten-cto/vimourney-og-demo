@@ -16,7 +16,8 @@
     "check": "npm run check -w app",
     "zip": "npm run build && node scripts/zip.mjs",
     "game": "npm run dev -w game",
-    "game:build": "npm run build -w game"
+    "game:build": "npm run build -w game",
+    "demo:build": "npm run build -w @kbm/game && rm -rf demo/public && cp -r game/dist demo/public"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

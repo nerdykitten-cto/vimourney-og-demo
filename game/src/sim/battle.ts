@@ -197,7 +197,7 @@ export class Battle {
     switch (id) {
       case 'sentry':
         this.weak = [
-          { row: 0, col: 50 },
+          { row: 0, col: 51 },
           { row: 1, col: 30 },
           { row: 2, col: 12 },
         ];
@@ -250,7 +250,7 @@ export class Battle {
         break;
       }
       case 'seeker':
-        this.weak = [{ row: 0, col: 30 }];
+        this.weak = [{ row: 0, col: 31 }];
         this.hitsNeeded = 8;
         this.pulseEvery = 11;
         this.jumpTimer = this.jumpEvery();
@@ -336,6 +336,14 @@ export class Battle {
       if (!same(p, cur)) return p;
     }
     return { row: 0, col: 0 };
+  }
+
+  /** Where the Stalker falls back to after a catch: as far from you as the arena allows, so it never lands on you. */
+  private farCorner(from: Pos): Pos {
+    const lines = this.info.lines;
+    const corners: Pos[] = [{ row: 0, col: 0 }, { row: 0, col: lines[0]!.length - 1 }, { row: lines.length - 1, col: 0 }, { row: lines.length - 1, col: lines[lines.length - 1]!.length - 1 }];
+    const dist = (p: Pos): number => Math.abs(p.row - from.row) + Math.abs(p.col - from.col);
+    return corners.reduce((a, b) => (dist(b) > dist(a) ? b : a));
   }
 
   private respawnPatrol(): void {
@@ -499,7 +507,7 @@ export class Battle {
         next.col = Math.min(Math.max(0, next.col), Math.max(0, len - 1));
         this.stalker = next;
         if (same(next, cursor)) {
-          this.stalker = { row: 0, col: this.info.lines[0]!.length - 1 };
+          this.stalker = this.farCorner(cursor);
           this.damage(events, { t: 'stalker-hit' });
           if (this.status !== 'running') return;
         }

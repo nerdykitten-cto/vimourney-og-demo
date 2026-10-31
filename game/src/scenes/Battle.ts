@@ -82,7 +82,7 @@ export class Battle extends Phaser.Scene {
     this.portrait = this.add.container(92, 99, [glyph, art]);
     this.tweens.add({ targets: art, y: -3, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     heading(this, 180, 26, info.title, 40, color);
-    text(this, 180, 82, info.blurb, 17, C.dim).setWordWrapWidth(560);
+    text(this, 180, 80, info.blurb, 17, C.dim).setWordWrapWidth(700).setLineSpacing(4);
     this.teleText = text(this, 180, 132, '', 22, C.warn, true);
 
     text(this, W - 340, 30, 'INTEGRITY', 14, C.dim);
@@ -352,7 +352,7 @@ export class Battle extends Phaser.Scene {
         t = text(this, 0, 0, '', FONT_SIZE, C.visual, true).setDepth(3);
         this.weakTexts[i] = t;
       }
-      t.setVisible(true).setPosition(p.x, p.y).setText(s.lines[w.row]![w.col] ?? '');
+      t.setVisible(true).setPosition(p.x, p.y).setText((s.lines[w.row]![w.col] ?? ' ').replace(' ', '*'));
     });
 
     // stalker

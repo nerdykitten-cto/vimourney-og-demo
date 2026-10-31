@@ -160,7 +160,7 @@ export class World extends Phaser.Scene {
     this.winsText.setText(`wins ${wins}/${this.nav.area.doorNeeds}   level ${mastery.characterLevel}  ${mastery.xp} XP`);
     const y = MY + this.nav.lines.length * TILE + 14;
     this.strip.forEach((s) => s.destroy());
-    this.strip = this.keys.slice(-12).map((k, i, arr) => keycap(this, W - 36 - (arr.length - i) * 38 + 36, y + 120, keyLabel(k), C.normal));
+    this.strip = this.keys.slice(-12).map((k, i, arr) => keycap(this, W - 36 - (arr.length - i) * 38 + 10, y + 120, keyLabel(k), C.normal));
   }
 
   private say(s: string, color: number = C.fg): void {

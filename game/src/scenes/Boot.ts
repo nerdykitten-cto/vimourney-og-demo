@@ -13,10 +13,10 @@ export class Boot extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.spritesheet('actors', 'assets/actors.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('tiles', 'assets/tiles.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('warden', 'assets/warden.png', { frameWidth: 32, frameHeight: 32 });
-    this.load.spritesheet('seeker', 'assets/seeker.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('actors', 'sprites/actors.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('tiles', 'sprites/tiles.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('warden', 'sprites/warden.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('seeker', 'sprites/seeker.png', { frameWidth: 32, frameHeight: 32 });
   }
 
   create(): void {

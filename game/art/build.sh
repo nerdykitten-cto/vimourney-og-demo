@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Rebuild all sprites: Aseprite scripts draw the .aseprite sources, then Aseprite exports sheets to public/assets.
+# Rebuild all sprites: Aseprite scripts draw the .aseprite sources, then Aseprite exports sheets to public/sprites.
 set -euo pipefail
 cd "$(dirname "$0")"
 ASE="${ASEPRITE:-$HOME/.steam/debian-installation/steamapps/common/Aseprite/aseprite}"
-OUT="$(pwd)/../public/assets"
+OUT="$(pwd)/../public/sprites"
 mkdir -p src "$OUT"
 "$ASE" -b --script-param out=src --script build.lua
 cd src

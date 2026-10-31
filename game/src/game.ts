@@ -20,6 +20,7 @@ export function startGame(): void {
     scene: [Boot, Title, World, Battle, Sheet, Arcade],
     render: { antialias: true },
   });
+  if (import.meta.env.DEV) (window as unknown as { game: Phaser.Game }).game = game;
   game.events.once(Phaser.Core.Events.READY, () => {
     document.getElementById('loading')!.hidden = true;
   });

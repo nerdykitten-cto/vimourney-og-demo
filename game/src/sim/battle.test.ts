@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createVimEngine } from '@kbm/vim';
-import { Battle, BATTLE_KEYS, wordBoundaries, type EnemyId } from './battle';
+import { Battle, BATTLE_KEYS, ENEMIES, wordBoundaries, type EnemyId } from './battle';
 import { createRng } from './rng';
 
 const make = (id: EnemyId, seed = 1) => new Battle(id, createVimEngine(), createRng(seed));
@@ -37,14 +37,14 @@ describe('Battle basics', () => {
 describe('Sentry', () => {
   it('is beaten by reaching and hitting each weak point', () => {
     const b = make('sentry');
-    // weak points: (0,50), (1,30), (2,12)
+    // weak points: (0,51), (1,30), (2,12)
     press(b, '$'); // end of line 0
     const last = b.lines[0]!.length - 1;
     expect(b.cursor.col).toBe(last);
-    press(b, 'h'.repeat(last - 50));
-    expect(b.cursor.col).toBe(50);
+    press(b, 'h'.repeat(last - 51));
+    expect(b.cursor.col).toBe(51);
     const ev = press(b, 'x');
-    expect(ev).toContainEqual({ t: 'hit', pos: { row: 0, col: 50 } });
+    expect(ev).toContainEqual({ t: 'hit', pos: { row: 0, col: 51 } });
     expect(b.hitsDone).toBe(1);
     expect(b.weak).toHaveLength(2);
   });
@@ -255,5 +255,19 @@ describe('Area 2: find and jump', () => {
       else b.feed(c.col < w.col ? 'l' : 'h');
     }
     expect(b.hitsDone).toBeGreaterThan(0);
+  });
+});
+
+describe('arena data', () => {
+  it('fixed weak points sit on visible characters', () => {
+    for (const id of Object.keys(ENEMIES) as EnemyId[]) {
+      if (id === 'patrol') continue; // it walks, and the scene draws a marker on spaces
+      const b = make(id);
+      for (const w of b.weak) expect(b.lines[w.row]![w.col], `${id} ${w.row},${w.col}`).toMatch(/\S/);
+    }
+  });
+
+  it('every battle fits on the 1280 wide stage', () => {
+    for (const id of Object.keys(ENEMIES) as EnemyId[]) for (const l of ENEMIES[id].lines) expect(l.length, id).toBeLessThanOrEqual(78);
   });
 });

@@ -36,11 +36,11 @@ function play(id: EnemyId, seed: number): Battle {
       continue;
     }
     // On the target's row, skip j and k: the search does not model the column Vim remembers after $.
-    const search = (w: Pos): string[] | null => optimalRoute(createVimEngine, b.lines, c, w, { maxKeys: 7, moves: w.row === c.row ? moves.filter((m) => m.keys[0] !== 'j' && m.keys[0] !== 'k') : moves });
+    const search = (w: Pos): string[] | null => optimalRoute(createVimEngine, b.lines, c, w, { maxKeys: 12, moves: w.row === c.row ? moves.filter((m) => m.keys[0] !== 'j' && m.keys[0] !== 'k') : moves });
     const routes = b.weak.map(search).filter((r): r is string[] => r !== null);
     const route = routes.sort((p, q) => p.length - q.length)[0];
     if (!route || route.length === 0) {
-      b.feed('l');
+      b.feed(b.weak[0]!.col > c.col ? 'l' : 'h');
       continue;
     }
     b.feed(route[0]!);
