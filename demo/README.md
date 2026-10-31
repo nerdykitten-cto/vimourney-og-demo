@@ -27,6 +27,8 @@ Run this from the project root after changing the game, then commit and push:
 npm run demo:build
 ```
 
+Vercel skips a deployment when nothing inside `demo/` changed, so changes to the game only go live after this rebuild.
+
 ## Credits
 
 - Built with [Phaser](https://phaser.io) (MIT).
