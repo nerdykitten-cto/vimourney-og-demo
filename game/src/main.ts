@@ -27,7 +27,7 @@ if (touchOnly) {
   notice.hidden = false;
   document.getElementById('play')!.addEventListener('click', () => {
     document.body.classList.add('touch');
-    buildKeypad(document.getElementById('left')!, document.getElementById('right')!);
+    buildKeypad(document.getElementById('left')!, document.getElementById('right')!, document.getElementById('board-left')!, document.getElementById('board-right')!);
     goFullscreen();
     void start();
   });
