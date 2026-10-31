@@ -3,7 +3,7 @@ import { createVimEngine } from '@kbm/vim';
 import { addHighScore, RUSH_COLS as COLS, RUSH_SECONDS, TargetRush, type HighScore } from '../sim/arcade';
 import { createRng } from '../sim/rng';
 import { log, mastery, sfx, store } from '../session';
-import { bindKeys, burst, C, charWidth, H, heading, keyLabel, panel, stage, text, W } from '../ui';
+import { bindKeys, burst, C, charWidth, H, heading, keyLabel, onScreenKeys, panel, stage, text, W } from '../ui';
 
 const FONT_SIZE = 26;
 const AY = 170;
@@ -68,6 +68,8 @@ export class Arcade extends Phaser.Scene {
     this.keysText = text(this, 36, 614, '', 19, C.normal);
     this.hintText = text(this, 36, 646, '', 19, C.warn, true);
     this.info = text(this, 36, 678, '', 15, C.dim);
+    // With on-screen keys, feedback sits in the middle, clear of the keys in the corners.
+    if (onScreenKeys()) [this.feed, this.keysText, this.hintText].forEach((t) => t.setOrigin(0.5, 0).setX(W / 2));
 
     this.newRound(false);
     bindKeys(this, (k) => this.onKey(k));

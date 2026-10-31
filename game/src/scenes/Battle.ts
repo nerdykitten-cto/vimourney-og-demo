@@ -5,7 +5,7 @@ import { createRng } from '../sim/rng';
 import { SKILLS } from '../sim/mastery';
 import { log, mastery, sfx, store } from '../session';
 import { ACTORS } from './Boot';
-import { bindKeys, burst, C, charWidth, H, heading, hex, keycap, keyLabel, panel, stage, sweepOut, text, W } from '../ui';
+import { bindKeys, burst, C, charWidth, H, heading, hex, keycap, keyLabel, onScreenKeys, panel, stage, sweepOut, text, W } from '../ui';
 
 const FONT_SIZE = 24;
 const ARENA_X = 100;
@@ -306,6 +306,7 @@ export class Battle extends Phaser.Scene {
     const main = tele.find((t) => t.kind === 'sweep') ?? tele.find((t) => t.kind === 'jump' && t.cells.length > 0) ?? tele.find((t) => t.kind === 'pulse') ?? tele[0];
     this.teleText.setText(main ? `>> ${main.text}` : '').setColor(main?.kind === 'sweep' || main?.kind === 'pulse' ? '#ff5c57' : '#ffb86c');
     this.modeText.setText(s.awaitingChar ? 'HOOK: PRESS A LETTER' : 'NORMAL').setColor(hex(s.awaitingChar ? C.warn : C.normal));
+    if (s.awaitingChar && onScreenKeys()) this.say('Hook: press a letter', C.warn);
     this.strip.forEach((k) => k.destroy());
     this.strip = s.keysUsed.slice(-24).map((k, i) => keycap(this, 36 + i * 38, BOTTOM_Y + 30, keyLabel(k), C.normal));
   }

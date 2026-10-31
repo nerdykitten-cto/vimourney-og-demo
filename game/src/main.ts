@@ -23,12 +23,29 @@ function goFullscreen(): void {
   document.documentElement.requestFullscreen?.().catch(() => undefined);
 }
 
+/**
+ * Phones can drop fullscreen, and asking needs a tap, so the next tap after a start or a rotation asks
+ * again. Only once each time, so a player who chose to leave fullscreen is not pulled back in.
+ */
+function keepFullscreen(): void {
+  let asked = false;
+  screen.orientation?.addEventListener('change', () => {
+    asked = false;
+  });
+  document.addEventListener('pointerup', () => {
+    if (asked || document.fullscreenElement) return;
+    asked = true;
+    goFullscreen();
+  });
+}
+
 if (touchOnly) {
   notice.hidden = false;
   document.getElementById('play')!.addEventListener('click', () => {
     document.body.classList.add('touch');
     buildKeypad(document.getElementById('board-left')!, document.getElementById('board-right')!);
     goFullscreen();
+    keepFullscreen();
     void start();
   });
   document.getElementById('anyway')!.addEventListener('click', () => void start());

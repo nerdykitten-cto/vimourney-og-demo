@@ -4,7 +4,7 @@ import { BOSSES, ENEMIES, type EnemyId } from '../sim/battle';
 import type { Entity } from '../sim/map';
 import { SKILLS } from '../sim/mastery';
 import { getNav, isCleared, log, markCleared, markDefeated, mastery, sfx, store } from '../session';
-import { bindKeys, burst, C, H, heading, hex, keycap, keyLabel, panel, stage, sweepIn, sweepOut, text, W } from '../ui';
+import { bindKeys, burst, C, H, heading, hex, keycap, keyLabel, onScreenKeys, panel, stage, sweepIn, sweepOut, text, W } from '../ui';
 
 const TILE = 32;
 const MY = 104;
@@ -60,8 +60,10 @@ export class World extends Phaser.Scene {
 
     heading(this, 24, 12, this.nav.area.title, 36, C.accent);
     this.winsText = text(this, W - 24, 20, '', 18, C.fg).setOrigin(1, 0);
-    text(this, 24, 66, 'Walk the map with real Vim motions. Walk into an enemy to fight it.', 16, C.dim);
-    text(this, W - 24, 66, 'Tab: character sheet    Esc: menu', 16, C.dim).setOrigin(1, 0);
+    if (!onScreenKeys()) {
+      text(this, 24, 66, 'Walk the map with real Vim motions. Walk into an enemy to fight it.', 16, C.dim);
+      text(this, W - 24, 66, 'Tab: character sheet    Esc: menu', 16, C.dim).setOrigin(1, 0);
+    }
 
     this.overlayEnter = null;
     this.coachStep = 0;
@@ -144,9 +146,11 @@ export class World extends Phaser.Scene {
   private drawPanel(): void {
     const y = MY + this.nav.lines.length * TILE + 14;
     panel(this, 16, y, W - 32, H - y - 16);
-    this.goal = text(this, 36, y + 14, '', 22, C.accent, true);
-    this.pendingText = text(this, W - 36, y + 14, '', 22, C.warn, true).setOrigin(1, 0);
-    this.msg = text(this, 36, y + 54, '', 18, C.fg);
+    // With on-screen keys, the words the player needs sit in the header, clear of the keys.
+    const top = onScreenKeys();
+    this.goal = text(this, top ? 24 : 36, top ? 54 : y + 14, '', top ? 20 : 22, C.accent, true);
+    this.pendingText = text(this, W - (top ? 24 : 36), top ? 54 : y + 14, '', top ? 20 : 22, C.warn, true).setOrigin(1, 0);
+    this.msg = text(this, top ? 24 : 36, top ? 80 : y + 54, '', top ? 16 : 18, C.fg);
     text(this, 36, y + 100, 'Your moves', 13, C.dim);
     SKILLS.forEach((s, i) => {
       const lvl = mastery.level(s.key);

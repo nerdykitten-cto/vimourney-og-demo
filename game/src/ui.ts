@@ -41,6 +41,11 @@ export function heading(scene: Phaser.Scene, x: number, y: number, s: string, si
   return scene.add.text(x, y, s, { fontFamily: DISPLAY_FONT, fontSize: `${size}px`, color: hex(color), fontStyle: 'bold', resolution: ZOOM });
 }
 
+/** True when the on-screen keyboard is showing. It covers the screen's lower corners sideways, so scenes keep their words clear of it. */
+export function onScreenKeys(): boolean {
+  return document.body.classList.contains('touch');
+}
+
 /** Every scene starts here: point the camera at the 1280x720 stage and fill it. */
 export function stage(scene: Phaser.Scene): void {
   scene.cameras.main.setZoom(ZOOM).centerOn(W / 2, H / 2);
