@@ -4,7 +4,9 @@
 
 **A top-down action RPG where every move is a real Vim command.** You walk the map with `h j k l`, hop between landmarks with `w`, hook onto letters with `f`, and beat bosses with nothing but your keyboard. No Vim experience needed: the game teaches each move as you need it.
 
-This repository holds the playable demo and its source. A live link will be added here once the demo is deployed. The game runs in a desktop browser and needs a physical keyboard.
+**[Play the demo in your browser](https://vimourney-og-demo.vercel.app)**
+
+This repository holds the demo and its source. The game runs in a desktop browser and needs a physical keyboard.
 
 ## Screenshots
 
