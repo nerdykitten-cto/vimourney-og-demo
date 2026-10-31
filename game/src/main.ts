@@ -1,11 +1,11 @@
 import '@fontsource/ibm-plex-mono/latin-400.css';
 import '@fontsource/ibm-plex-mono/latin-700.css';
 import '@fontsource/pixelify-sans/latin-700.css';
+import { buildKeypad } from './keypad';
 
 const notice = document.getElementById('notice')!;
-const anyway = document.getElementById('anyway')!;
 
-/** Phones and tablets have no Esc, Tab or real typing, so they get a note instead of a broken game. */
+/** Phones and tablets get a start screen first: going fullscreen and sideways needs a tap. */
 const touchOnly = matchMedia('(hover: none) and (pointer: coarse)').matches;
 
 async function start(): Promise<void> {
@@ -18,7 +18,23 @@ async function start(): Promise<void> {
   startGame();
 }
 
+/** iPhones refuse both of these, so the game also has to work without them. */
+async function goSideways(): Promise<void> {
+  try {
+    await document.documentElement.requestFullscreen?.();
+    await (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }).lock?.('landscape');
+  } catch {
+    // The rotate prompt covers this.
+  }
+}
+
 if (touchOnly) {
   notice.hidden = false;
-  anyway.addEventListener('click', () => void start());
+  document.getElementById('play')!.addEventListener('click', () => {
+    document.body.classList.add('touch');
+    buildKeypad(document.getElementById('left')!, document.getElementById('right')!);
+    void goSideways();
+    void start();
+  });
+  document.getElementById('anyway')!.addEventListener('click', () => void start());
 } else void start();

@@ -6,7 +6,7 @@
 
 **[Play the demo in your browser](https://vimourney-og-demo.vercel.app)**
 
-This repository holds the demo and its source. The game runs in a desktop browser and needs a physical keyboard.
+This repository holds the demo and its source. The game plays best in a desktop browser with a real keyboard. On a phone, turn it sideways and play on a split on-screen QWERTY keyboard, with one half under each thumb.
 
 ## Screenshots
 
@@ -32,7 +32,7 @@ This repository holds the demo and its source. The game runs in a desktop browse
 | --- | --- |
 | `h` `j` `k` `l` | Step left, down, up, right |
 | `w` `b` `e` | Hop to the next word, the previous word, the end of a word |
-| `0` `$` | Run to the start or end of the line |
+| `0` `$` | Run to the start or end of the line (`$` is `Shift` + `4`, on screen too) |
 | `f` + letter | Hook forward onto a letter (`F` goes backward) |
 | `t` + letter | Stop just short of a letter (`T` goes backward) |
 | `;` `,` | Repeat the last hook, forward or backward |

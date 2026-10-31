@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { normalizeKey } from '@kbm/shared';
+import { clearKeySink, setKeySink } from './keys';
 
 export const W = 1280;
 export const H = 720;
@@ -131,6 +132,8 @@ export function sweepOut(scene: Phaser.Scene): void {
 
 /** Route normalized key presses (shared key rules: Ctrl chords, no bare modifiers) to `fn` until the scene ends. */
 export function bindKeys(scene: Phaser.Scene, fn: (key: string) => void): void {
+  setKeySink(fn);
+  scene.events.once('shutdown', () => clearKeySink(fn));
   const kb = scene.input.keyboard;
   if (!kb) return;
   const handler = (e: KeyboardEvent): void => {

@@ -119,8 +119,10 @@ export class Title extends Phaser.Scene {
 
   private toggleFullscreen(): void {
     const done = (): void => this.refresh();
+    const blocked = (): void => void this.note.setText('Fullscreen is not available here.');
     if (document.fullscreenElement) void document.exitFullscreen().finally(done);
-    else void document.documentElement.requestFullscreen().catch(() => this.note.setText('Your browser blocked fullscreen. F11 works too.')).finally(done);
+    else if (document.documentElement.requestFullscreen) void document.documentElement.requestFullscreen().catch(blocked).finally(done);
+    else blocked();
   }
 
   private askReset(): void {
