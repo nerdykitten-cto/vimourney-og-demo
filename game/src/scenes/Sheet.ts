@@ -3,6 +3,8 @@ import { LEVEL_NAMES, progressFor, SKILLS, THRESHOLDS } from '../sim/mastery';
 import { mastery } from '../session';
 import { bindKeys, C, H, heading, panel, stage, text, W } from '../ui';
 
+const BAR_X = 440;
+
 export class Sheet extends Phaser.Scene {
   private back = 'Title';
 
@@ -22,7 +24,7 @@ export class Sheet extends Phaser.Scene {
     panel(this, 20, 96, W - 40, 560);
 
     text(this, 50, 112, 'skill', 13, C.dim);
-    text(this, 330, 112, 'mastery', 13, C.dim);
+    text(this, BAR_X, 112, 'mastery', 13, C.dim);
     text(this, W - 50, 112, 'uses', 13, C.dim).setOrigin(1, 0);
     SKILLS.forEach((s, i) => {
       const y = 136 + i * 35;
@@ -31,7 +33,7 @@ export class Sheet extends Phaser.Scene {
       const col = lvl >= 3 ? C.accent : lvl >= 1 ? C.normal : C.dim;
       text(this, 50, y, s.name, 20, col, true);
       text(this, 100, y + 3, s.blurb, 15, C.fg);
-      const barX = 330;
+      const barX = BAR_X;
       const g = this.add.graphics();
       g.fillStyle(0x1a2330, 1).fillRoundedRect(barX, y + 4, 260, 14, 5);
       const done = lvl >= THRESHOLDS.length;

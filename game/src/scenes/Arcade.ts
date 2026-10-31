@@ -1,12 +1,11 @@
 import Phaser from 'phaser';
 import { createVimEngine } from '@kbm/vim';
-import { addHighScore, RUSH_SECONDS, TargetRush, type HighScore } from '../sim/arcade';
+import { addHighScore, RUSH_COLS as COLS, RUSH_SECONDS, TargetRush, type HighScore } from '../sim/arcade';
 import { createRng } from '../sim/rng';
 import { log, mastery, sfx, store } from '../session';
 import { bindKeys, burst, C, charWidth, H, heading, keyLabel, panel, stage, text, W } from '../ui';
 
 const FONT_SIZE = 26;
-const AX = 90;
 const AY = 170;
 const LH = 52;
 
@@ -25,6 +24,7 @@ export class Arcade extends Phaser.Scene {
   private game_!: TargetRush;
   private phase: Phase = 'ready';
   private cw = 12;
+  private ax = 90;
   private g!: Phaser.GameObjects.Graphics;
   private scoreText!: Phaser.GameObjects.Text;
   private timeText!: Phaser.GameObjects.Text;
@@ -52,6 +52,7 @@ export class Arcade extends Phaser.Scene {
     this.overlay = [];
     this.lineTexts = [];
     this.cw = charWidth(this, FONT_SIZE);
+    this.ax = Math.round((W - COLS * this.cw) / 2);
     stage(this);
     heading(this, 24, 12, 'Target Rush', 40, C.visual);
     this.scoreText = text(this, W - 24, 16, 'SCORE 0', 28, C.star, true).setOrigin(1, 0);
@@ -80,7 +81,7 @@ export class Arcade extends Phaser.Scene {
     this.seed = daily ? d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate() : Math.floor(Math.random() * 1e9);
     this.game_ = new TargetRush(createVimEngine, createRng(this.seed));
     this.lineTexts.forEach((t) => t.destroy());
-    this.lineTexts = this.game_.lines.map((line, r) => text(this, AX, AY + r * LH, line, FONT_SIZE, C.fg).setDepth(2));
+    this.lineTexts = this.game_.lines.map((line, r) => text(this, this.ax, AY + r * LH, line, FONT_SIZE, C.fg).setDepth(2));
     this.clearOverlay();
     this.phase = 'ready';
     const o: Phaser.GameObjects.GameObject[] = [];
@@ -150,7 +151,7 @@ export class Arcade extends Phaser.Scene {
   }
 
   private cellPx(row: number, col: number): { x: number; y: number } {
-    return { x: AX + col * this.cw, y: AY + row * LH };
+    return { x: this.ax + col * this.cw, y: AY + row * LH };
   }
 
   private refresh(): void {

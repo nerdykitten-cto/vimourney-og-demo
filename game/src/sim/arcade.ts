@@ -5,6 +5,7 @@ import type { Rng } from './rng';
 const WORDS = ['alpha', 'beta', 'gamma', 'delta', 'node', 'link', 'root', 'leaf', 'array', 'index', 'value', 'item', 'queue', 'stack', 'parse', 'token', 'scope', 'block', 'frame', 'cache', 'merge', 'split', 'trim', 'fold', 'map', 'sum', 'min', 'max', 'tree', 'path'];
 
 export const RUSH_SECONDS = 60;
+export const RUSH_COLS = 54;
 export const WARMUP_TARGETS = 3;
 /** Extra keys over the best route before the game shows it as a hint. */
 export const HINT_AFTER_EXTRA = 3;
@@ -39,13 +40,16 @@ export class TargetRush {
     private readonly factory: EngineFactory,
     private readonly rng: Rng,
     rows = 7,
-    cols = 54,
+    cols = RUSH_COLS,
   ) {
     this.engine = factory();
     this.lines = Array.from({ length: rows }, () => {
       let s = '';
-      while (s.length < cols) s += (s ? ' ' : '') + rng.pick(WORDS);
-      return s.slice(0, cols).trimEnd();
+      for (;;) {
+        const next = (s ? `${s} ` : '') + rng.pick(WORDS);
+        if (next.length > cols) return s;
+        s = next;
+      }
     });
     this.engine.reset({ lines: this.lines, cursor: { row: rng.int(rows), col: rng.int(cols - 10) } });
     this.target = this.pickTarget();

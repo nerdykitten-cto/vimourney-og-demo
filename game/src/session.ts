@@ -1,5 +1,6 @@
 import { createVimEngine } from '@kbm/vim';
 import { AREAS, areaById } from './sim/area2';
+import { ENEMIES } from './sim/battle';
 import { PlaytestLog } from './sim/log';
 import { MapNav } from './sim/map';
 import { Mastery } from './sim/mastery';
@@ -44,7 +45,12 @@ export function resetProgress(): void {
   for (const a of AREAS) {
     store.set(defeatedKey(a.id), []);
     store.set(`cleared-${a.id}`, false);
+    store.set(`seen-${a.id}`, false);
   }
+  // The tutorial and enemy cards come back too, so a demo machine can be handed to the next player.
+  store.set('coached', false);
+  store.set('fought', false);
+  for (const id of Object.keys(ENEMIES)) store.set(`seen-${id}`, false);
   mastery.reset();
 }
 

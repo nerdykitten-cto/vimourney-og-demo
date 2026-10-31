@@ -106,7 +106,7 @@ export const ENEMIES: Record<EnemyId, EnemyInfo> = {
   warden: {
     id: 'warden',
     title: 'THE WARDEN',
-    blurb: 'Its weak point jumps in patterns. Read the arrow. Later it sweeps whole rows.',
+    blurb: 'Its weak point jumps in patterns. Read the warning, then be there first. Later it sweeps whole rows.',
     lines: ['alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu', 'node.link(root, branch, leaf);  // walk the tree', 'return warden;'],
     maxIntegrity: 5,
     tip: 'Phase 1 walks forward, 2 walks back, 3 runs the edges, 4 mixes them. Later, press j or k to leave a glowing row.',

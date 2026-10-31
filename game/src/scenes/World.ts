@@ -16,7 +16,7 @@ const COLORS: Record<string, number> = { sentry: C.warn, patrol: C.star, stalker
 const COACH: Array<{ key: string; text: string }> = [
   { key: 'l', text: 'Press l to step right' },
   { key: 'k', text: 'Press k to step up' },
-  { key: 'w', text: 'Press w to hop along the row into the Sentry' },
+  { key: 'w', text: 'Line up with the Sentry on its row, then press w to hop into it' },
 ];
 
 export class World extends Phaser.Scene {
@@ -35,6 +35,7 @@ export class World extends Phaser.Scene {
   private busy = false;
   private overlay: Phaser.GameObjects.GameObject[] | null = null;
   private overlayEnter: (() => void) | null = null;
+  private coachStep = 0;
   private resultData: { result?: string; enemy?: EnemyId; entityId?: string; area?: string } = {};
 
   constructor() {
@@ -63,6 +64,7 @@ export class World extends Phaser.Scene {
     text(this, W - 24, 66, 'Tab: character sheet    Esc: menu', 16, C.dim).setOrigin(1, 0);
 
     this.overlayEnter = null;
+    this.coachStep = 0;
     this.drawMap();
     this.drawPanel();
 
@@ -169,10 +171,9 @@ export class World extends Phaser.Scene {
 
   /** The line at the top of the panel: the next thing to do. */
   private refreshGoal(): void {
-    const step = store.get<number>('coach', 0);
     const area = this.nav.area;
     let goal = '';
-    if (this.areaId === 'area-1' && step < COACH.length) goal = COACH[step]!.text;
+    if (this.coaching()) goal = COACH[this.coachStep]!.text;
     else if (isCleared(area.id)) goal = 'Area cleared. Esc: back to the menu';
     else if (this.nav.isDoorOpen) goal = `The door is open. Find ${ENEMIES[area.boss as EnemyId].title} behind it`;
     else {
@@ -182,10 +183,14 @@ export class World extends Phaser.Scene {
     this.goal.setText(goal);
   }
 
+  /** The first steps run until the player's first fight, and restart if they leave before it. */
+  private coaching(): boolean {
+    return this.areaId === 'area-1' && this.coachStep < COACH.length && !store.get<boolean>('coached', false);
+  }
+
   private coachKey(key: string): void {
-    const step = store.get<number>('coach', 0);
-    if (this.areaId === 'area-1' && COACH[step]?.key === key) {
-      store.set('coach', step + 1);
+    if (this.coaching() && COACH[this.coachStep]!.key === key && this.coachStep < COACH.length - 1) {
+      this.coachStep++;
       this.refreshGoal();
     }
   }
@@ -287,6 +292,7 @@ export class World extends Phaser.Scene {
     }
     const id = e.kind as EnemyId;
     const info = ENEMIES[id];
+    store.set('coached', true);
     this.busy = true;
     sfx.warn();
     this.say(`${info.title}: ${info.blurb}`, COLORS[e.kind]);
@@ -321,7 +327,7 @@ export class World extends Phaser.Scene {
       sfx.win();
       if (this.doorGfx) this.tweens.add({ targets: this.doorGfx, alpha: 0, duration: 500, onComplete: () => this.doorGfx?.destroy() });
     } else {
-      this.say(`${ENEMIES[enemy].title} purged. ${this.nav.area.doorNeeds - this.nav.defeatedCount} more to open the door.`, C.accent);
+      this.say(`${ENEMIES[enemy].title} purged.`, C.accent);
     }
   }
 
@@ -330,14 +336,14 @@ export class World extends Phaser.Scene {
   private openLesson(): void {
     const objs: Phaser.GameObjects.GameObject[] = [];
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setDepth(60);
-    objs.push(dim, panel(this, 120, 110, W - 240, 380, C.accent).setDepth(61));
-    objs.push(heading(this, 150, 124, `FIELD GUIDE: ${this.nav.area.title.split(': ')[1]!.toUpperCase()}`, 34, C.accent).setDepth(62));
-    objs.push(text(this, 150, 172, 'The map is text, so the same keys that edit text move you.', 16, C.dim).setDepth(62));
+    objs.push(dim, panel(this, 180, 100, W - 360, 440, C.accent).setDepth(61));
+    objs.push(heading(this, 216, 118, `FIELD GUIDE: ${this.nav.area.title.split(': ')[1]!.toUpperCase()}`, 34, C.accent).setDepth(62));
+    objs.push(text(this, 216, 170, 'The map is text, so the same keys that edit text move you.', 17, C.dim).setDepth(62));
     this.nav.area.lesson.forEach(([k, d], i) => {
-      objs.push(text(this, 150, 220 + i * 40, k, 20, C.normal, true).setDepth(62));
-      objs.push(text(this, 330, 222 + i * 40, d, 17, C.fg).setDepth(62));
+      objs.push(text(this, 216, 220 + i * 42, k, 20, C.normal, true).setDepth(62));
+      objs.push(text(this, 400, 222 + i * 42, d, 17, C.fg).setDepth(62));
     });
-    objs.push(text(this, W / 2, 450, 'Enter: close', 16, C.warn).setOrigin(0.5).setDepth(62));
+    objs.push(text(this, W / 2, 496, 'Enter: close', 19, C.warn, true).setOrigin(0.5).setDepth(62));
     this.overlay = objs;
     log.add('lesson-open');
   }

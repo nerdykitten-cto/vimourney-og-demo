@@ -5,11 +5,11 @@ export const W = 1280;
 export const H = 720;
 
 /**
- * The canvas is drawn at a whole multiple of the design size, big enough for the whole screen, and the
- * camera zooms to match. Scenes keep working in 1280x720 units while text and sprites stay sharp at
+ * The canvas is drawn at up to twice the design size, enough for most screens without slowing weak
+ * laptops, and the camera zooms to match. Scenes keep working in 1280x720 units while text and sprites stay sharp at
  * any window size, including fullscreen and hi-DPI displays.
  */
-export const ZOOM = Math.min(3, Math.max(1, Math.ceil(Math.max(screen.width / W, screen.height / H) * (window.devicePixelRatio || 1))));
+export const ZOOM = Math.min(2, Math.max(1, Math.ceil(Math.max(screen.width / W, screen.height / H) * (window.devicePixelRatio || 1))));
 
 export const C = {
   bg: 0x0a0e13,
